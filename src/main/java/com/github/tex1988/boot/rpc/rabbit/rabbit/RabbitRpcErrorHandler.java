@@ -1,8 +1,10 @@
 package com.github.tex1988.boot.rpc.rabbit.rabbit;
 
+import com.github.tex1988.boot.rpc.rabbit.constant.ErrorStatusCode;
 import com.github.tex1988.boot.rpc.rabbit.exception.RabbitRpcServiceException;
 import com.github.tex1988.boot.rpc.rabbit.exception.RabbitRpcServiceValidationException;
 import com.github.tex1988.boot.rpc.rabbit.model.ErrorRabbitResponse;
+import com.github.tex1988.boot.rpc.rabbit.model.RabbitRpcErrorMapping;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
@@ -15,15 +17,16 @@ import static com.github.tex1988.boot.rpc.rabbit.constant.Constants.TYPE_ID_HEAD
 /**
  * Handles errors that occur during Rabbit RPC message processing.
  * <p>
- * This class provides basic implementation of {@link RabbitListenerErrorHandler} to provide custom error handling logic
- * for RabbitMQ listeners. Errors are categorized, and appropriate error responses are generated
- * and sent back to the client.
+ * This class provides a flexible implementation of {@link RabbitListenerErrorHandler} to enable custom error handling
+ * logic for RabbitMQ listeners. Errors are categorized based on a mapping of exception types to {@link ErrorStatusCode},
+ * or resolved using default behavior when no mapping is provided.
  * </p>
  * <p>
  * The handler supports:
  * <ul>
- *     <li>Validation errors (e.g., {@link RabbitRpcServiceValidationException}), returning 400 status codes.</li>
- *     <li>All other exceptions, returning 500 status codes.</li>
+ *     <li>Validation errors (e.g., {@link RabbitRpcServiceValidationException}), returning {@link ErrorStatusCode#BAD_REQUEST}.</li>
+ *     <li>Mapped exceptions, returning the associated {@link ErrorStatusCode} as defined in the {@code errorCodes} map.</li>
+ *     <li>All other exceptions, returning {@link ErrorStatusCode#INTERNAL_SERVER_ERROR} by default.</li>
  * </ul>
  * </p>
  *
@@ -40,6 +43,13 @@ public class RabbitRpcErrorHandler implements RabbitListenerErrorHandler {
     private final String serviceName;
 
     /**
+     * A mapping of exception types to {@link ErrorStatusCode} for custom error resolution.
+     *
+     * @see RabbitRpcErrorMapping
+     */
+    private final RabbitRpcErrorMapping errorCodes;
+
+    /**
      * Handles errors that occur during the execution of RabbitMQ message listeners.
      *
      * @param amqpMessage the original AMQP message that caused the error
@@ -48,10 +58,37 @@ public class RabbitRpcErrorHandler implements RabbitListenerErrorHandler {
      * @return a {@link Message} containing an {@link ErrorRabbitResponse} as the payload
      */
     @Override
-    public Object handleError(Message amqpMessage, org.springframework.messaging.Message<?> message, ListenerExecutionFailedException exception) {
+    public Object handleError(Message amqpMessage, org.springframework.messaging.Message<?> message,
+                              ListenerExecutionFailedException exception) {
+        Throwable cause = exception.getCause();
+        ErrorRabbitResponse response;
+        if (errorCodes != null && errorCodes.containsKey(cause.getClass())) {
+            response = resolveByMapping(cause);
+        } else {
+            response = resolveByDefault(cause);
+        }
+        if (response.getStatusCode() == ErrorStatusCode.INTERNAL_SERVER_ERROR.getCode()) {
+            log.error("An error occurred during RabbitMQ RPC message processing", exception);
+        }
+        return MessageBuilder.withPayload(response)
+                .setHeader(TYPE_ID_HEADER, ErrorRabbitResponse.class.getCanonicalName())
+                .build();
+    }
 
-        // Construct an error response based on the type of exception
-        ErrorRabbitResponse response = switch (exception.getCause()) {
+    private ErrorRabbitResponse resolveByMapping(Throwable exception) {
+        return new ErrorRabbitResponse(exception instanceof RabbitRpcServiceException ?
+                ((RabbitRpcServiceValidationException) exception).getTimestamp() :
+                System.currentTimeMillis(),
+                errorCodes.get(exception.getClass()).getCode(),
+                serviceName,
+                exception.getMessage(),
+                exception instanceof RabbitRpcServiceValidationException ?
+                        ((RabbitRpcServiceValidationException) exception).getBindingResult() :
+                        null);
+    }
+
+    private ErrorRabbitResponse resolveByDefault(Throwable exception) {
+        return switch (exception) {
             case RabbitRpcServiceValidationException e -> new ErrorRabbitResponse(e.getTimestamp(),
                     e.getStatusCode(),
                     e.getServiceName(),
@@ -62,19 +99,11 @@ public class RabbitRpcErrorHandler implements RabbitListenerErrorHandler {
                     e.getServiceName(),
                     e.getMessage(),
                     null);
-            default -> {
-                log.error("An error occurred during message processing", exception);
-                yield new ErrorRabbitResponse(System.currentTimeMillis(),
-                        500,
-                        serviceName,
-                        exception.getCause().getMessage(),
-                        null);
-            }
+            default -> new ErrorRabbitResponse(System.currentTimeMillis(),
+                    ErrorStatusCode.INTERNAL_SERVER_ERROR.getCode(),
+                    serviceName,
+                    exception.getCause().getMessage(),
+                    null);
         };
-
-        // Build and return a response message with the error details
-        return MessageBuilder.withPayload(response)
-                .setHeader(TYPE_ID_HEADER, ErrorRabbitResponse.class.getCanonicalName())
-                .build();
     }
 }

@@ -2,7 +2,9 @@ package com.github.tex1988.boot.rpc.rabbit.rabbit;
 
 import com.github.tex1988.boot.rpc.rabbit.annotation.FireAndForget;
 import com.github.tex1988.boot.rpc.rabbit.annotation.RabbitRpcInterface;
+import com.github.tex1988.boot.rpc.rabbit.constant.ErrorStatusCode;
 import com.github.tex1988.boot.rpc.rabbit.exception.RabbitRpcServiceException;
+import com.github.tex1988.boot.rpc.rabbit.exception.RabbitRpcServiceValidationException;
 import com.github.tex1988.boot.rpc.rabbit.model.ErrorRabbitResponse;
 import jakarta.annotation.PostConstruct;
 import org.springframework.amqp.core.MessagePostProcessor;
@@ -111,25 +113,34 @@ public class RabbitRpcClientProxyFactory<T> implements FactoryBean<T> {
             throw new IllegalStateException("No response from " + serviceName);
         }
         if (response instanceof ErrorRabbitResponse errorResponse) {
-            throw new RabbitRpcServiceException(errorResponse.getTimestamp(), errorResponse.getServiceName(),
-                    errorResponse.getStatusCode(), errorResponse.getMessage());
+            handleErrorResponse(errorResponse);
         }
         return (R) response;
     }
 
-    public String objectClassName(Object obj) {
+    private void handleErrorResponse(ErrorRabbitResponse response) {
+        if (response.getStatusCode() == ErrorStatusCode.BAD_REQUEST.getCode()) {
+            throw new RabbitRpcServiceValidationException(response.getTimestamp(), response.getServiceName(),
+                    response.getStatusCode(), response.getMessage(), response.getBindingResult());
+        } else {
+            throw new RabbitRpcServiceException(response.getTimestamp(), response.getServiceName(),
+                    response.getStatusCode(), response.getMessage());
+        }
+    }
+
+    private String objectClassName(Object obj) {
         return obj.getClass().getName();
     }
 
-    public int objectHashCode(Object obj) {
+    private int objectHashCode(Object obj) {
         return System.identityHashCode(obj);
     }
 
-    public boolean objectEquals(Object obj, Object other) {
+    private boolean objectEquals(Object obj, Object other) {
         return obj == other;
     }
 
-    public String objectToString(Object obj) {
+    private String objectToString(Object obj) {
         return objectClassName(obj) + '@' + Integer.toHexString(objectHashCode(obj));
     }
 }

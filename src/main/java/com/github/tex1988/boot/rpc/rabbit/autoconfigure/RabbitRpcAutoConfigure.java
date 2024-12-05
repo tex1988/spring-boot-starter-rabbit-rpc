@@ -3,6 +3,7 @@ package com.github.tex1988.boot.rpc.rabbit.autoconfigure;
 import com.github.tex1988.boot.rpc.rabbit.annotation.EnableRabbitRpc;
 import com.github.tex1988.boot.rpc.rabbit.annotation.RabbitRpcInterface;
 import com.github.tex1988.boot.rpc.rabbit.annotation.RabbitRpcService;
+import com.github.tex1988.boot.rpc.rabbit.model.RabbitRpcErrorMapping;
 import com.github.tex1988.boot.rpc.rabbit.rabbit.RabbitRpcBeanExpressionResolver;
 import com.github.tex1988.boot.rpc.rabbit.rabbit.RabbitRpcErrorHandler;
 import com.github.tex1988.boot.rpc.rabbit.rabbit.RabbitRpcMessageHandler;
@@ -235,7 +236,8 @@ class RabbitRpcAutoConfigure {
         if (errorHandlerBeanName != null && !errorHandlerBeanName.isBlank()) {
             return applicationContext.getBean(errorHandlerBeanName, RabbitListenerErrorHandler.class);
         } else {
-            return new RabbitRpcErrorHandler(getServiceName());
+            RabbitRpcErrorMapping errorMapping = applicationContext.getBean(RabbitRpcErrorMapping.class);
+            return new RabbitRpcErrorHandler(getServiceName(), errorMapping);
         }
     }
 
