@@ -2,8 +2,10 @@ package com.github.tex1988.boot.rpc.rabbit.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 
 import java.io.Serializable;
+import java.util.Map;
 
 /**
  * Represents an error response sent from the Rabbit RPC service when an exception occurs.
@@ -22,6 +24,7 @@ import java.io.Serializable;
  */
 @Data
 @AllArgsConstructor
+@RequiredArgsConstructor
 public class ErrorRabbitResponse implements Serializable {
 
     /**
@@ -46,4 +49,10 @@ public class ErrorRabbitResponse implements Serializable {
      * This message will provide additional context for the failure, such as validation errors or exception details.
      */
     private String message;
+
+    /**
+     * An optional binding result containing the validation errors.
+     * This is only non-null when the error is a result of a validation error.
+     */
+    private Map<String, String> bindingResult;
 }

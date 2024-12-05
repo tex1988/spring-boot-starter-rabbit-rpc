@@ -24,16 +24,6 @@ import java.lang.annotation.Target;
 public @interface RabbitRpcInterface {
 
     /**
-     * Specifies the name of the Rabbit RPC service.
-     * <p>
-     * This name is used to identify the service within the RabbitMQ infrastructure.
-     * </p>
-     *
-     * @return the service name; default is "Rabbit RPC service"
-     */
-    String service() default "Rabbit RPC service";
-
-    /**
      * Specifies the name of the exchange to which messages will be sent.
      * <p>
      * The exchange is responsible for routing messages to the appropriate queue(s).

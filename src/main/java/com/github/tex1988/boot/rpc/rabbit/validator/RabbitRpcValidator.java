@@ -1,14 +1,10 @@
 package com.github.tex1988.boot.rpc.rabbit.validator;
 
+import com.github.tex1988.boot.rpc.rabbit.exception.RabbitRpcServiceValidationException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Valid;
 import jakarta.validation.Validator;
 import lombok.AllArgsConstructor;
-import org.springframework.core.MethodParameter;
-import org.springframework.messaging.Message;
-import org.springframework.messaging.handler.annotation.support.MethodArgumentNotValidException;
-import org.springframework.validation.BeanPropertyBindingResult;
-import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 
 import java.lang.annotation.Annotation;
@@ -16,7 +12,9 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A utility class for validating method arguments and objects in Rabbit RPC services.
@@ -25,7 +23,7 @@ import java.util.List;
  * on method parameters and objects, ensuring that they comply with specified validation rules.
  * </p>
  *
- * <p>If validation fails, a {@link MethodArgumentNotValidException} is thrown,
+ * <p>If validation fails, a {@link RabbitRpcServiceValidationException} is thrown,
  * containing details about the violations.</p>
  *
  * @author tex1988
@@ -42,13 +40,12 @@ public class RabbitRpcValidator {
     /**
      * Validates the arguments of a method and its associated constraints.
      *
-     * @param args         the method arguments to validate
-     * @param method       the method being invoked
-     * @param iClazz       the interface class that declares the method
-     * @param message      the RabbitMQ message associated with the method call
-     * @throws MethodArgumentNotValidException if any validation constraints are violated
+     * @param args   the method arguments to validate
+     * @param method the method being invoked
+     * @param iClazz the interface class that declares the method
+     * @throws RabbitRpcServiceValidationException if any validation constraints are violated
      */
-    public void validate(Object[] args, Method method, Class<?> iClazz, Message<?> message) {
+    public void validate(Object[] args, Method method, Class<?> iClazz) {
         List<ConstraintViolation<Object>> violations = new ArrayList<>();
         Annotation[][] annotationsArr = method.getParameterAnnotations();
 
@@ -60,18 +57,32 @@ public class RabbitRpcValidator {
 
         // If there are validation errors, throw an exception
         if (!violations.isEmpty()) {
-            BindingResult bindingResult = new BeanPropertyBindingResult(args, "args");
+            Map<String, String> bindingResult = new HashMap<>();
             violations.forEach(violation -> {
                 String validationMessage = violation.getMessage();
-                bindingResult.rejectValue(null, null, validationMessage);
+                String fieldName = getFieldName(violation);
+                bindingResult.put(fieldName, validationMessage);
             });
-
-            MethodParameter parameter = new MethodParameter(method, 0);
-            throw new MethodArgumentNotValidException(message, parameter, bindingResult);
+            String errorMessage = "Validation failed for fields: " + String.join(", ",
+                    bindingResult.keySet().stream().sorted().toList());
+            throw new RabbitRpcServiceValidationException(System.currentTimeMillis(), iClazz.getSimpleName(), 400,
+                    errorMessage, bindingResult);
         }
     }
 
-    private void validateArgConstraints(Class<?> serviceInterface, Method method, Object[] args, List<ConstraintViolation<Object>> violations) {
+    private String getFieldName(ConstraintViolation<Object> violation) {
+        String[] path = violation.getPropertyPath().toString().split("\\.");
+        String name = path[path.length - 1];
+        if (violation.getRootBean() instanceof Proxy) {
+            name = violation.getInvalidValue().getClass().getSimpleName() + ":" + name;
+        } else {
+            name = violation.getRootBean().getClass().getSimpleName() + "." + name;
+        }
+        return name;
+    }
+
+    private void validateArgConstraints(Class<?> serviceInterface, Method method, Object[] args,
+                                        List<ConstraintViolation<Object>> violations) {
         Object proxyInstance = Proxy.newProxyInstance(
                 serviceInterface.getClassLoader(),
                 new Class<?>[]{serviceInterface},
@@ -82,7 +93,8 @@ public class RabbitRpcValidator {
                 .validateParameters(proxyInstance, method, args));
     }
 
-    private void validateObjectConstraints(Object[] args, Annotation[][] annotationsArr, List<ConstraintViolation<Object>> violations) {
+    private void validateObjectConstraints(Object[] args, Annotation[][] annotationsArr,
+                                           List<ConstraintViolation<Object>> violations) {
         for (int i = 0; i < args.length; i++) {
             Object arg = args[i];
             Annotation[] annotations = annotationsArr[i];

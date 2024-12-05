@@ -1,16 +1,14 @@
 package com.github.tex1988.boot.rpc.rabbit.rabbit;
 
+import com.github.tex1988.boot.rpc.rabbit.exception.RabbitRpcServiceException;
+import com.github.tex1988.boot.rpc.rabbit.exception.RabbitRpcServiceValidationException;
 import com.github.tex1988.boot.rpc.rabbit.model.ErrorRabbitResponse;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
-import org.springframework.context.support.DefaultMessageSourceResolvable;
-import org.springframework.messaging.handler.annotation.support.MethodArgumentNotValidException;
 import org.springframework.messaging.support.MessageBuilder;
-
-import java.util.stream.Collectors;
 
 import static com.github.tex1988.boot.rpc.rabbit.constant.Constants.TYPE_ID_HEADER;
 
@@ -24,7 +22,7 @@ import static com.github.tex1988.boot.rpc.rabbit.constant.Constants.TYPE_ID_HEAD
  * <p>
  * The handler supports:
  * <ul>
- *     <li>Validation errors (e.g., {@link MethodArgumentNotValidException}), returning 400 status codes.</li>
+ *     <li>Validation errors (e.g., {@link RabbitRpcServiceValidationException}), returning 400 status codes.</li>
  *     <li>All other exceptions, returning 500 status codes.</li>
  * </ul>
  * </p>
@@ -54,18 +52,23 @@ public class RabbitRpcErrorHandler implements RabbitListenerErrorHandler {
 
         // Construct an error response based on the type of exception
         ErrorRabbitResponse response = switch (exception.getCause()) {
-            case MethodArgumentNotValidException e -> new ErrorRabbitResponse(System.currentTimeMillis(),
-                    400,
-                    serviceName,
-                    e.getBindingResult() != null ? e.getBindingResult().getAllErrors().stream()
-                            .map(DefaultMessageSourceResolvable::getDefaultMessage)
-                            .collect(Collectors.joining("\n")) : null);
+            case RabbitRpcServiceValidationException e -> new ErrorRabbitResponse(e.getTimestamp(),
+                    e.getStatusCode(),
+                    e.getServiceName(),
+                    e.getMessage(),
+                    e.getBindingResult());
+            case RabbitRpcServiceException e -> new ErrorRabbitResponse(e.getTimestamp(),
+                    e.getStatusCode(),
+                    e.getServiceName(),
+                    e.getMessage(),
+                    null);
             default -> {
                 log.error("An error occurred during message processing", exception);
                 yield new ErrorRabbitResponse(System.currentTimeMillis(),
                         500,
                         serviceName,
-                        exception.getCause().getMessage());
+                        exception.getCause().getMessage(),
+                        null);
             }
         };
 

@@ -29,7 +29,6 @@ import org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.amqp.RabbitRetryTemplateCustomizer;
 import org.springframework.boot.autoconfigure.amqp.SimpleRabbitListenerContainerFactoryConfigurer;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -44,6 +43,7 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
+import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -77,9 +77,6 @@ class RabbitRpcAutoConfigure {
     private SimpleMessageConverter messageConverter;
     private RabbitListenerErrorHandler errorHandler;
 
-    @Value("${com.github.tex1988.spring-rabbit-rpc.service-name:RabbitRpcService}")
-    private String serviceName;
-
     @Bean
     public RabbitRpcBeanExpressionResolver rabbitRpcBeanExpressionResolver() {
         return expressionResolver;
@@ -88,7 +85,7 @@ class RabbitRpcAutoConfigure {
     @PostConstruct
     public void init() {
         EnableRabbitRpc annotation = getEnableRabbitRpc();
-        if(annotation != null && (annotation.enableClient() || annotation.enableServer())) {
+        if (annotation != null && (annotation.enableClient() || annotation.enableServer())) {
             initRabbitTemplate(annotation);
         }
         if (annotation != null && annotation.enableServer()) {
@@ -134,9 +131,8 @@ class RabbitRpcAutoConfigure {
         MethodHandles.Lookup lookup = MethodHandles.publicLookup();
         Map<Class<?>, List<Object>> beanMap = beanList.stream()
                 .collect(Collectors.groupingBy(bean -> getRabbitRpcInterface(bean.getClass()), Collectors.toList()));
-        beanMap.forEach((iClass, beans) -> {
-            beans.forEach(bean -> createMethodHandles(bean, iClass, lookup));
-        });
+        beanMap.forEach((iClass, beans) -> beans.forEach(bean ->
+                createMethodHandles(bean, iClass, lookup)));
     }
 
     @SneakyThrows
@@ -165,7 +161,7 @@ class RabbitRpcAutoConfigure {
                 .collect(Collectors.groupingBy(bean -> Objects.requireNonNull(
                                 expressionResolver.resolveValue(getRabbitRpcInterface(bean.getClass()).getAnnotation(RabbitRpcInterface.class).exchange())),
                         Collectors.groupingBy(bean -> Objects.requireNonNull(
-                                expressionResolver.resolveValue(getRabbitRpcInterface(bean.getClass()).getAnnotation(RabbitRpcInterface.class).queue())),
+                                        expressionResolver.resolveValue(getRabbitRpcInterface(bean.getClass()).getAnnotation(RabbitRpcInterface.class).queue())),
                                 Collectors.toList())));
     }
 
@@ -239,7 +235,7 @@ class RabbitRpcAutoConfigure {
         if (errorHandlerBeanName != null && !errorHandlerBeanName.isBlank()) {
             return applicationContext.getBean(errorHandlerBeanName, RabbitListenerErrorHandler.class);
         } else {
-            return new RabbitRpcErrorHandler(serviceName);
+            return new RabbitRpcErrorHandler(getServiceName());
         }
     }
 
@@ -299,6 +295,16 @@ class RabbitRpcAutoConfigure {
             return Arrays.stream(concurrency.split("-")).map(Integer::parseInt).toList();
         } else {
             return Collections.emptyList();
+        }
+    }
+
+    @SneakyThrows
+    private String getServiceName() {
+        String hostName = InetAddress.getLocalHost().getHostName();
+        if (hostName != null) {
+            return hostName;
+        } else {
+            return InetAddress.getLocalHost().getHostAddress();
         }
     }
 }

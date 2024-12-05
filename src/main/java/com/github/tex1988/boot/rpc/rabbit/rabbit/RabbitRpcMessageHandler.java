@@ -1,9 +1,9 @@
 package com.github.tex1988.boot.rpc.rabbit.rabbit;
 
 import com.github.tex1988.boot.rpc.rabbit.annotation.FireAndForget;
-import com.rabbitmq.client.Channel;
 import com.github.tex1988.boot.rpc.rabbit.model.VoidRabbitResponse;
 import com.github.tex1988.boot.rpc.rabbit.validator.RabbitRpcValidator;
+import com.rabbitmq.client.Channel;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -58,10 +58,11 @@ public class RabbitRpcMessageHandler {
     /**
      * Processes a RabbitMQ message and invokes the appropriate service method.
      *
-     * @param message          the incoming RabbitMQ message
-     * @param channel          the RabbitMQ channel (unused in this method)
+     * @param message           the incoming RabbitMQ message
+     * @param channel           the RabbitMQ channel (unused in this method)
      * @param messageProperties the properties of the RabbitMQ message
-     * @return a {@link Message} object containing the method's return value or {@code null} if the method is annotated with {@link FireAndForget}
+     * @return a {@link Message} object containing the method's return value
+     * or {@code null}if the method is annotated with {@link FireAndForget}
      * @throws IllegalStateException if the method specified in the headers is not found
      */
     @SneakyThrows
@@ -90,7 +91,7 @@ public class RabbitRpcMessageHandler {
         Class<?> returnType = method.getReturnType();
 
         // Validate method arguments
-        validator.validate(args, method, iClazz, null);
+        validator.validate(args, method, iClazz);
 
         // Invoke the target method
         Object result = methodHandle.invokeWithArguments(args);

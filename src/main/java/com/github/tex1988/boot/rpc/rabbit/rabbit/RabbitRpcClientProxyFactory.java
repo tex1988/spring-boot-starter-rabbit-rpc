@@ -31,10 +31,10 @@ public class RabbitRpcClientProxyFactory<T> implements FactoryBean<T> {
     private final RabbitTemplate rabbitTemplate;
     private final RabbitRpcBeanExpressionResolver expressionResolver;
     private final RabbitRpcInterface annotation;
+    private final String serviceName;
 
-    private  String serviceName;
-    private  String exchange;
-    private  String routing;
+    private String exchange;
+    private String routing;
 
     static {
         Class<Object> objClass = Object.class;
@@ -55,11 +55,11 @@ public class RabbitRpcClientProxyFactory<T> implements FactoryBean<T> {
         this.rabbitTemplate = rabbitTemplate;
         this.annotation = interfaceType.getAnnotation(RabbitRpcInterface.class);
         this.expressionResolver = expressionResolver;
+        this.serviceName = interfaceType.getSimpleName();
     }
 
     @PostConstruct
     public void init() {
-        this.serviceName = expressionResolver.resolveValue(annotation.service());
         this.exchange = expressionResolver.resolveValue(annotation.exchange());
         this.routing = expressionResolver.resolveValue(annotation.routing());
     }

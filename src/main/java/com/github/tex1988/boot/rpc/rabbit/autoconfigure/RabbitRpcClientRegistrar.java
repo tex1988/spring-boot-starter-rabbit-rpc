@@ -1,8 +1,8 @@
 package com.github.tex1988.boot.rpc.rabbit.autoconfigure;
 
 import com.github.tex1988.boot.rpc.rabbit.annotation.EnableRabbitRpc;
-import com.github.tex1988.boot.rpc.rabbit.rabbit.RabbitRpcClientProxyFactory;
 import com.github.tex1988.boot.rpc.rabbit.annotation.RabbitRpcInterface;
+import com.github.tex1988.boot.rpc.rabbit.rabbit.RabbitRpcClientProxyFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;

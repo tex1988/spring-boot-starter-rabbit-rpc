@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 /**
  * A mock response class used for methods that have a {@code void} return type
- * in Rabbit RPC, where the method is not annotated with {@link FireAndForget}.
+ * in Rabbit RPC, where the method is not annotated with {@link com.github.tex1988.boot.rpc.rabbit.annotation.FireAndForget}.
  * <p>
  * This class is used as a placeholder response for void methods, where no actual response
  * is expected to be returned, but a valid message structure is required for the Rabbit RPC
