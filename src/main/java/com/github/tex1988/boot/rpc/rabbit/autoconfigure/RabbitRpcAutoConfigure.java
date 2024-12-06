@@ -30,6 +30,7 @@ import org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.boot.autoconfigure.amqp.RabbitRetryTemplateCustomizer;
 import org.springframework.boot.autoconfigure.amqp.SimpleRabbitListenerContainerFactoryConfigurer;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -221,7 +222,8 @@ class RabbitRpcAutoConfigure {
     @SneakyThrows
     private SimpleMessageListenerContainer getMessageListenerContainer(Queue queue) {
         MethodRabbitListenerEndpoint endpoint = new MethodRabbitListenerEndpoint();
-        RabbitRpcMessageHandler handler = new RabbitRpcMessageHandler(new RabbitRpcValidator(validator), messageConverter, methodHandles);
+        RabbitRpcValidator rpcValidator = new RabbitRpcValidator(validator, getServiceName());
+        RabbitRpcMessageHandler handler = new RabbitRpcMessageHandler(rpcValidator, messageConverter, methodHandles);
         Method handleMethod = handler.getClass().getMethod(HANDLER_METHOD_NAME, Message.class, Channel.class, MessageProperties.class);
         endpoint.setQueues(queue);
         endpoint.setBean(handler);
@@ -236,7 +238,7 @@ class RabbitRpcAutoConfigure {
         if (errorHandlerBeanName != null && !errorHandlerBeanName.isBlank()) {
             return applicationContext.getBean(errorHandlerBeanName, RabbitListenerErrorHandler.class);
         } else {
-            RabbitRpcErrorMapping errorMapping = applicationContext.getBean(RabbitRpcErrorMapping.class);
+            RabbitRpcErrorMapping errorMapping = getErrorMapping();
             return new RabbitRpcErrorHandler(getServiceName(), errorMapping);
         }
     }
@@ -308,5 +310,15 @@ class RabbitRpcAutoConfigure {
         } else {
             return InetAddress.getLocalHost().getHostAddress();
         }
+    }
+
+    private RabbitRpcErrorMapping getErrorMapping() {
+        RabbitRpcErrorMapping errorMapping;
+        try {
+            errorMapping = applicationContext.getBean(RabbitRpcErrorMapping.class);
+        } catch (NoSuchBeanDefinitionException e) {
+            errorMapping = null;
+        }
+        return errorMapping;
     }
 }

@@ -37,6 +37,7 @@ public class RabbitRpcValidator {
      * The validator used for performing validation operations.
      */
     private final Validator validator;
+    private final String serviceName;
 
     /**
      * Validates the arguments of a method and its associated constraints.
@@ -66,7 +67,7 @@ public class RabbitRpcValidator {
             });
             String errorMessage = "Validation failed for fields: " + String.join(", ",
                     bindingResult.keySet().stream().sorted().toList());
-            throw new RabbitRpcServiceValidationException(System.currentTimeMillis(), iClazz.getSimpleName(),
+            throw new RabbitRpcServiceValidationException(System.currentTimeMillis(), serviceName,
                     ErrorStatusCode.BAD_REQUEST.getCode(),
                     errorMessage, bindingResult);
         }
