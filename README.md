@@ -10,6 +10,155 @@ The primary use case is to define contract interfaces and argument classes in se
 Both the client and server must have access to the same contracts and argument classes for seamless communication.
 
 # Getting Started
+1. Add the starter to your server and client projects and common library:
+```xml
+<dependency>
+    <groupId>com.github.tex1988</groupId>
+    <artifactId>spring-boot-starter-rabbit-rpc</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+</dependency>
+```
+spring-boot-starter-amqp also must be present in the classpath:
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-amqp</artifactId>
+</dependency>
+```
+2. An RPC service contract needs to be defined in a common library with using the `@RabbitRpcInterface` annotation (both client and server must have RPC contract interface in the classpath):
+```java
+@RabbitRpcInterface(exchange = "#{properties.getExchange()}",
+        queue = "#{properties.getQueue()}",
+        routing = "#{properties.getRouting()}")
+public interface IUserService {
+
+    User get(@Max(100) Long id);
+
+    User create(@Validated(User.OnCreate.class) User user);
+
+    User update(@Validated({User.OnUpdate.class}) User user);
+
+    @FireAndForget
+    void delete(@NotNull Long id);
+}
+```
+The `exchange`, `queue`, and `routing` properties are SpEL (Spring Expression Language) expressions that are evaluated at runtime.
+
+Alternatively, direct values can be provided.
+
+If the specified `exchange` or `queue` already exists, they will be reused. Otherwise, the starter will create them automatically.
+
+`jakarta.validation` annotations can be used for argument validation on the server side. For more details, see the [Jakarta Validation API documentation](https://javadoc.io/doc/jakarta.validation/jakarta.validation-api/latest/index.html).
+
+The `@FireAndForget` annotation can be used to mark a method as fire-and-forget. In this case, the client will not wait for a response from the server. By default, all void methods are synchronous and wait to confirm successful execution.
+
+3. Server side
+
+The `@EnableRabbitRpc` annotation must be used to enable the RPC server with property `enableServer = true`. 
+
+This library uses Java serialization for message serialization, so the `allowedSerializationPatterns` property must be provided to specify which packages are allowed for serialization.
+
+For proper functionality, the starter enables serialization for the following packages by default:
+
+- java.lang.*
+- java.util.*
+- com.github.tex1988.boot.rpc.rabbit.model.*
+
+`scanBasePackages` property is used to specify the packages that will be scanned for RPC contracts (interfaces marked with `@RabbitRpcInterface`).
+```java
+@EnableRabbitRpc(enableServer = true,
+        scanBasePackages = {"com.github.tex1988.boot.rpc.rabbit.example.common.service"},
+        allowedSerializationPatterns = {"com.github.tex1988.boot.rpc.rabbit.example.common.model.*"},
+        concurrency = "5-10"
+)
+@SpringBootApplication(scanBasePackages = {"com.github.tex1988"})
+@PropertySource({
+        "classpath:application-local.properties",
+})
+public class ServerApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(ServerApplication.class, args);
+    }
+}
+```
+
+An RPC service implementation that implements the contract interface must be provided on the server side.
+```java
+@RabbitRpcService
+public class UserService implements IUserService {
+
+    @Override
+    public User get(Long id) {
+        return new User("testFirstName", "testLastName",
+                "user1", "user1@test.com", "+123456789", true);
+    }
+
+    @Override
+    public User create(User user) {
+        return user;
+    }
+
+    @Override
+    public User update(User user) {
+        return user;
+    }
+
+    @Override
+    @SneakyThrows
+    public void delete(Long id) {
+        Thread.sleep(1000);
+    }
+}
+```
+The `@RabbitRpcService` annotation is used to mark a class as an RPC service implementation. 
+It includes the `@Service` annotation, which ensures that a bean of this class is created and can also be used like a regular Spring bean.
+
+4. Client side
+
+The `@EnableRabbitRpc` annotation must be used to enable the RPC client with property `enableClient = true`:
+
+```java
+@EnableRabbitRpc(enableClient = true,
+        scanBasePackages = {"com.github.tex1988.boot.rpc.rabbit.example.common.service"},
+        allowedSerializationPatterns = {"com.github.tex1988.boot.rpc.rabbit.example.common.model.*"},
+        replyTimeout = 10000L
+)
+@SpringBootApplication(scanBasePackages = {"com.github.tex1988"})
+@PropertySource({
+        "classpath:application-local.properties",
+})
+public class ClientApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(ClientApplication.class, args);
+    }
+}
+```
+
+Description of `scanBasePackages` and `allowedSerializationPatterns` properties is the same as on the server side.
+
+`replyTimeout` property is used to specify the time in milliseconds that the client will wait for a response from the server.
+
+To use the RPC client, you need to inject it by the contract interface:
+```java
+@AllArgsConstructor
+@RestController
+public class Controller {
+
+    private final IUserService userService;
+
+    @GetMapping("/user/{id}")
+    public User getUser(@PathVariable Long id) {
+        return userService.get(id);
+    }
+}
+```
+If both the client and server implementations are in the same application, you can resolve the client bean by its name. The names of all client beans are generated using the pattern `interfaceName + "Client"`. For example, for the `IUserService` contract interface, the generated bean name will be `iUserServiceClient`.
+
+5. Additional properties.
+
+One application can act as both a client and a server. In this case, the `enableServer` and `enableClient` properties can be set to `true` simultaneously.
+
+For all `@EnableRabbitRpc` properties, see the [EnableRabbitRpc](src/main/java/com/github/tex1988/boot/rpc/rabbit/annotation/EnableRabbitRpc.java) class.
 
 ### Reference Documentation
 For further reference, please consider the following sections:
