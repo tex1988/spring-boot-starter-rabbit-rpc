@@ -84,7 +84,8 @@ public class ServerApplication {
 
 An RPC service implementation that implements the contract interface must be provided on the server side.
 ```java
-@RabbitRpcService
+@Service
+@RabbitRpc
 public class UserService implements IUserService {
 
     @Override
@@ -110,8 +111,9 @@ public class UserService implements IUserService {
     }
 }
 ```
-The `@RabbitRpcService` annotation is used to mark a class as an RPC service implementation. 
-It includes the `@Service` annotation, which ensures that a bean of this class is created and can also be used like a regular Spring bean.
+The `@RabbitRpc` annotation is used to mark a class as an RPC service implementation.
+A bean of a class marked with @RabbitRpc is required.
+The method of bean creation is flexible and can include annotations like `@Component`, `@Service`, or factory methods such as `@Bean`.
 
 4. Client side
 

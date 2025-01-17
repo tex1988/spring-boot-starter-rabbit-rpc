@@ -2,7 +2,7 @@ package com.github.tex1988.boot.rpc.rabbit.autoconfigure;
 
 import com.github.tex1988.boot.rpc.rabbit.annotation.EnableRabbitRpc;
 import com.github.tex1988.boot.rpc.rabbit.annotation.RabbitRpcInterface;
-import com.github.tex1988.boot.rpc.rabbit.annotation.RabbitRpcService;
+import com.github.tex1988.boot.rpc.rabbit.annotation.RabbitRpc;
 import com.github.tex1988.boot.rpc.rabbit.model.RabbitRpcErrorMapping;
 import com.github.tex1988.boot.rpc.rabbit.rabbit.RabbitRpcBeanExpressionResolver;
 import com.github.tex1988.boot.rpc.rabbit.rabbit.RabbitRpcErrorHandler;
@@ -93,7 +93,7 @@ class RabbitRpcAutoConfigure {
         if (annotation != null && annotation.enableServer()) {
 
             List<Object> beanList = applicationContext
-                    .getBeansWithAnnotation(RabbitRpcService.class).values().stream().toList();
+                    .getBeansWithAnnotation(RabbitRpc.class).values().stream().toList();
             if (!beanList.isEmpty()) {
                 initRabbitListenerContainerFactory(annotation);
                 errorHandler = getErrorHandler(annotation);

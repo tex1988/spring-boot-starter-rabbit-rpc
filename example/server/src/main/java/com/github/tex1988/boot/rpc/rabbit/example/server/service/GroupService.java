@@ -1,17 +1,19 @@
 package com.github.tex1988.boot.rpc.rabbit.example.server.service;
 
-import com.github.tex1988.boot.rpc.rabbit.annotation.RabbitRpcService;
+import com.github.tex1988.boot.rpc.rabbit.annotation.RabbitRpc;
 import com.github.tex1988.boot.rpc.rabbit.example.common.model.Group;
 import com.github.tex1988.boot.rpc.rabbit.example.common.model.User;
 import com.github.tex1988.boot.rpc.rabbit.example.common.service.IGroupService;
 import com.github.tex1988.boot.rpc.rabbit.example.server.exception.NotFoundException;
+import org.springframework.stereotype.Service;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
 @Slf4j
-@RabbitRpcService
+@Service
+@RabbitRpc
 public class GroupService implements IGroupService {
 
     @Override
