@@ -27,6 +27,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint;
+import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
@@ -67,6 +68,7 @@ class RabbitRpcAutoConfigure {
     private final ConnectionFactory connectionFactory;
     private final SimpleRabbitListenerContainerFactoryConfigurer configurer;
     private final DefaultMessageHandlerMethodFactory messageHandlerMethodFactory = new DefaultMessageHandlerMethodFactory();
+    private final RabbitListenerEndpointRegistry registry;
     private final AmqpAdmin amqpAdmin;
     private final Validator validator;
     private final Map<Class<?>, Map<Method, MethodHandle>> methodHandles = new ConcurrentHashMap<>();
@@ -112,6 +114,9 @@ class RabbitRpcAutoConfigure {
         rabbitListenerContainerFactory = new SimpleRabbitListenerContainerFactory();
         configurer.configure(rabbitListenerContainerFactory, connectionFactory);
         rabbitListenerContainerFactory.setMessageConverter(messageConverter);
+        rabbitListenerContainerFactory.setDefaultRequeueRejected(false);
+        rabbitListenerContainerFactory.setFailedDeclarationRetryInterval(10000L);
+        rabbitListenerContainerFactory.setMissingQueuesFatal(false);
         List<Integer> concurrency = getConcurrency(annotation);
         if (!concurrency.isEmpty()) {
             rabbitListenerContainerFactory.setConcurrentConsumers(concurrency.get(0));
@@ -168,8 +173,7 @@ class RabbitRpcAutoConfigure {
             RabbitRpcInterface annotation = getRabbitRpcInterface(beans.getFirst().getClass()).getAnnotation(RabbitRpcInterface.class);
             String routing = expressionResolver.resolveValue(annotation.routing());
             Queue queue = createQueue(queueName, exchange, routing, amqpAdmin);
-            MessageListenerContainer container = getMessageListenerContainer(queue);
-            container.start();
+            createMessageListenerContainer(queue);
         });
     }
 
@@ -215,17 +219,18 @@ class RabbitRpcAutoConfigure {
     }
 
     @SneakyThrows
-    private SimpleMessageListenerContainer getMessageListenerContainer(Queue queue) {
+    private void createMessageListenerContainer(Queue queue) {
         MethodRabbitListenerEndpoint endpoint = new MethodRabbitListenerEndpoint();
         RabbitRpcValidator rpcValidator = new RabbitRpcValidator(validator, getServiceName());
         RabbitRpcMessageHandler handler = new RabbitRpcMessageHandler(rpcValidator, messageConverter, methodHandles);
         Method handleMethod = handler.getClass().getMethod(HANDLER_METHOD_NAME, Message.class, Channel.class, MessageProperties.class);
+        endpoint.setId(queue.getName() + "-" + getServiceName());
         endpoint.setQueues(queue);
         endpoint.setBean(handler);
         endpoint.setMethod(handleMethod);
         endpoint.setErrorHandler(errorHandler);
         endpoint.setMessageHandlerMethodFactory(messageHandlerMethodFactory);
-        return rabbitListenerContainerFactory.createListenerContainer(endpoint);
+        registry.registerListenerContainer(endpoint, rabbitListenerContainerFactory, true);
     }
 
     private RabbitListenerErrorHandler getErrorHandler(EnableRabbitRpc annotation, Map<Class<?>, Map<Method, MethodHandle>> methodHandles) {
