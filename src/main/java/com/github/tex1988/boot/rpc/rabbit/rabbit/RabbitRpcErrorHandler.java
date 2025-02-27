@@ -75,16 +75,19 @@ public class RabbitRpcErrorHandler implements RabbitListenerErrorHandler {
                               ListenerExecutionFailedException exception) {
         Throwable cause = exception.getCause();
         ErrorRabbitResponse response;
+        String methodName = (String) message.getHeaders().get(METHOD_HEADER);
+        String className = (String) message.getHeaders().get(SERVICE_HEADER);
         if (errorCodes != null && errorCodes.containsKey(cause.getClass())) {
             response = resolveByMapping(cause);
         } else {
             response = resolveByDefault(cause);
         }
         if (response.getStatusCode() == ErrorStatusCode.INTERNAL_SERVER_ERROR.getCode()) {
-            log.error("An error occurred during RabbitMQ RPC message processing", exception);
+            log.error("An error occurred during RabbitMQ RPC message processing for class: {}, method: {}()",
+                    className, methodName, exception);
         }
 
-        if (isReturn(message)) {
+        if (isReturn(className, methodName)) {
             return MessageBuilder.withPayload(response)
                     .setHeader(TYPE_ID_HEADER, ErrorRabbitResponse.class.getCanonicalName())
                     .build();
@@ -125,9 +128,7 @@ public class RabbitRpcErrorHandler implements RabbitListenerErrorHandler {
         };
     }
 
-    private boolean isReturn(org.springframework.messaging.Message<?> message) {
-        String methodName = (String) message.getHeaders().get(METHOD_HEADER);
-        String className = (String) message.getHeaders().get(SERVICE_HEADER);
+    private boolean isReturn(String className, String methodName) {
         Class<?> iClazz = Utils.getClassByName(this, className);
         Map.Entry<Method, MethodHandle> methodEntry = Utils.getMethodEntry(methodHandles, iClazz, methodName);
         Method method = methodEntry.getKey();
