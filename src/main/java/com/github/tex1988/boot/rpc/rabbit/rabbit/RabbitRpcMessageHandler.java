@@ -2,6 +2,7 @@ package com.github.tex1988.boot.rpc.rabbit.rabbit;
 
 import com.github.tex1988.boot.rpc.rabbit.annotation.FireAndForget;
 import com.github.tex1988.boot.rpc.rabbit.model.VoidRabbitResponse;
+import com.github.tex1988.boot.rpc.rabbit.util.Utils;
 import com.github.tex1988.boot.rpc.rabbit.validator.RabbitRpcValidator;
 import com.rabbitmq.client.Channel;
 import lombok.AllArgsConstructor;
@@ -77,15 +78,10 @@ public class RabbitRpcMessageHandler {
         Object[] args = (Object[]) converter.fromMessage(message);
 
         // Load the service class and retrieve its method handles
-        Class<?> iClazz = this.getClass().getClassLoader().loadClass(serviceName);
-        Map<Method, MethodHandle> iMethodHandles = methodHandles.get(iClazz);
+        Class<?> iClazz = Utils.getClassByName(this, serviceName);
 
         // Find the target method by name
-        Map.Entry<Method, MethodHandle> methodEntry = iMethodHandles.entrySet().stream()
-                .filter(e -> e.getKey().getName().equals(methodName))
-                .findAny()
-                .orElseThrow(() -> new IllegalStateException("Method: " + methodName + " not found"));
-
+        Map.Entry<Method, MethodHandle> methodEntry = Utils.getMethodEntry(methodHandles, iClazz, methodName);
         Method method = methodEntry.getKey();
         MethodHandle methodHandle = methodEntry.getValue();
         Class<?> returnType = method.getReturnType();

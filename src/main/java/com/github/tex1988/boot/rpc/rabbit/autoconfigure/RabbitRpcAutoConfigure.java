@@ -1,8 +1,8 @@
 package com.github.tex1988.boot.rpc.rabbit.autoconfigure;
 
 import com.github.tex1988.boot.rpc.rabbit.annotation.EnableRabbitRpc;
-import com.github.tex1988.boot.rpc.rabbit.annotation.RabbitRpcInterface;
 import com.github.tex1988.boot.rpc.rabbit.annotation.RabbitRpc;
+import com.github.tex1988.boot.rpc.rabbit.annotation.RabbitRpcInterface;
 import com.github.tex1988.boot.rpc.rabbit.model.RabbitRpcErrorMapping;
 import com.github.tex1988.boot.rpc.rabbit.rabbit.RabbitRpcBeanExpressionResolver;
 import com.github.tex1988.boot.rpc.rabbit.rabbit.RabbitRpcErrorHandler;
@@ -31,7 +31,6 @@ import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
-import org.springframework.boot.autoconfigure.amqp.RabbitRetryTemplateCustomizer;
 import org.springframework.boot.autoconfigure.amqp.SimpleRabbitListenerContainerFactoryConfigurer;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.context.ApplicationContext;
@@ -39,7 +38,6 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory;
-import org.springframework.retry.support.RetryTemplate;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -69,7 +67,6 @@ class RabbitRpcAutoConfigure {
     private final ConnectionFactory connectionFactory;
     private final SimpleRabbitListenerContainerFactoryConfigurer configurer;
     private final DefaultMessageHandlerMethodFactory messageHandlerMethodFactory = new DefaultMessageHandlerMethodFactory();
-    private final RabbitRetryTemplateCustomizer customizeRetryPolicy;
     private final AmqpAdmin amqpAdmin;
     private final Validator validator;
     private final Map<Class<?>, Map<Method, MethodHandle>> methodHandles = new ConcurrentHashMap<>();
@@ -96,8 +93,8 @@ class RabbitRpcAutoConfigure {
                     .getBeansWithAnnotation(RabbitRpc.class).values().stream().toList();
             if (!beanList.isEmpty()) {
                 initRabbitListenerContainerFactory(annotation);
-                errorHandler = getErrorHandler(annotation);
                 createMethodHandles(beanList);
+                errorHandler = getErrorHandler(annotation, methodHandles);
                 initServers(beanList);
             }
         }
@@ -107,7 +104,6 @@ class RabbitRpcAutoConfigure {
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
         rabbitTemplate.setMessageConverter(getRpcMessageConverter(annotation));
         rabbitTemplate.setReplyTimeout(annotation.replyTimeout());
-        rabbitTemplate.setRetryTemplate(getSenderRetryTemplate());
         ((ConfigurableApplicationContext) applicationContext).getBeanFactory()
                 .registerSingleton(RPC_RABBIT_TEMPLATE_BEAN_NAME, rabbitTemplate);
     }
@@ -116,7 +112,6 @@ class RabbitRpcAutoConfigure {
         rabbitListenerContainerFactory = new SimpleRabbitListenerContainerFactory();
         configurer.configure(rabbitListenerContainerFactory, connectionFactory);
         rabbitListenerContainerFactory.setMessageConverter(messageConverter);
-        rabbitListenerContainerFactory.setRetryTemplate(getReceiverRetryTemplate());
         List<Integer> concurrency = getConcurrency(annotation);
         if (!concurrency.isEmpty()) {
             rabbitListenerContainerFactory.setConcurrentConsumers(concurrency.get(0));
@@ -233,13 +228,13 @@ class RabbitRpcAutoConfigure {
         return rabbitListenerContainerFactory.createListenerContainer(endpoint);
     }
 
-    private RabbitListenerErrorHandler getErrorHandler(EnableRabbitRpc annotation) {
+    private RabbitListenerErrorHandler getErrorHandler(EnableRabbitRpc annotation, Map<Class<?>, Map<Method, MethodHandle>> methodHandles) {
         String errorHandlerBeanName = expressionResolver.resolveValue(annotation.errorHandler());
         if (errorHandlerBeanName != null && !errorHandlerBeanName.isBlank()) {
             return applicationContext.getBean(errorHandlerBeanName, RabbitListenerErrorHandler.class);
         } else {
             RabbitRpcErrorMapping errorMapping = getErrorMapping();
-            return new RabbitRpcErrorHandler(getServiceName(), errorMapping);
+            return new RabbitRpcErrorHandler(getServiceName(), errorMapping, methodHandles);
         }
     }
 
@@ -268,19 +263,6 @@ class RabbitRpcAutoConfigure {
         } else {
             return null;
         }
-    }
-
-    private RetryTemplate getSenderRetryTemplate() {
-        RetryTemplate retryTemplate = new RetryTemplate();
-        customizeRetryPolicy.customize(RabbitRetryTemplateCustomizer.Target.SENDER, retryTemplate);
-        return retryTemplate;
-
-    }
-
-    private RetryTemplate getReceiverRetryTemplate() {
-        RetryTemplate retryTemplate = new RetryTemplate();
-        customizeRetryPolicy.customize(RabbitRetryTemplateCustomizer.Target.LISTENER, retryTemplate);
-        return retryTemplate;
     }
 
     private EnableRabbitRpc getEnableRabbitRpc() {

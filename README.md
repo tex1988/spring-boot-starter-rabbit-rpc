@@ -112,7 +112,7 @@ public class UserService implements IUserService {
 }
 ```
 The `@RabbitRpc` annotation is used to mark a class as an RPC service implementation.
-A bean of a class marked with @RabbitRpc is required.
+A bean of a class marked with `@RabbitRpc` is required.
 The method of bean creation is flexible and can include annotations like `@Component`, `@Service`, or factory methods such as `@Bean`.
 
 4. Client side

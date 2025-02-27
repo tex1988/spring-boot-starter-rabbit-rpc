@@ -1,10 +1,12 @@
 package com.github.tex1988.boot.rpc.rabbit.rabbit;
 
+import com.github.tex1988.boot.rpc.rabbit.annotation.FireAndForget;
 import com.github.tex1988.boot.rpc.rabbit.constant.ErrorStatusCode;
 import com.github.tex1988.boot.rpc.rabbit.exception.RabbitRpcServiceException;
 import com.github.tex1988.boot.rpc.rabbit.exception.RabbitRpcServiceValidationException;
 import com.github.tex1988.boot.rpc.rabbit.model.ErrorRabbitResponse;
 import com.github.tex1988.boot.rpc.rabbit.model.RabbitRpcErrorMapping;
+import com.github.tex1988.boot.rpc.rabbit.util.Utils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
@@ -12,6 +14,12 @@ import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.messaging.support.MessageBuilder;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.reflect.Method;
+import java.util.Map;
+
+import static com.github.tex1988.boot.rpc.rabbit.constant.Constants.METHOD_HEADER;
+import static com.github.tex1988.boot.rpc.rabbit.constant.Constants.SERVICE_HEADER;
 import static com.github.tex1988.boot.rpc.rabbit.constant.Constants.TYPE_ID_HEADER;
 
 /**
@@ -50,6 +58,11 @@ public class RabbitRpcErrorHandler implements RabbitListenerErrorHandler {
     private final RabbitRpcErrorMapping errorCodes;
 
     /**
+     * A mapping between service interfaces and their methods, associated with {@link MethodHandle}s for invocation.
+     */
+    private final Map<Class<?>, Map<Method, MethodHandle>> methodHandles;
+
+    /**
      * Handles errors that occur during the execution of RabbitMQ message listeners.
      *
      * @param amqpMessage the original AMQP message that caused the error
@@ -70,9 +83,14 @@ public class RabbitRpcErrorHandler implements RabbitListenerErrorHandler {
         if (response.getStatusCode() == ErrorStatusCode.INTERNAL_SERVER_ERROR.getCode()) {
             log.error("An error occurred during RabbitMQ RPC message processing", exception);
         }
-        return MessageBuilder.withPayload(response)
-                .setHeader(TYPE_ID_HEADER, ErrorRabbitResponse.class.getCanonicalName())
-                .build();
+
+        if (isReturn(message)) {
+            return MessageBuilder.withPayload(response)
+                    .setHeader(TYPE_ID_HEADER, ErrorRabbitResponse.class.getCanonicalName())
+                    .build();
+        } else {
+            return null;
+        }
     }
 
     private ErrorRabbitResponse resolveByMapping(Throwable exception) {
@@ -102,8 +120,17 @@ public class RabbitRpcErrorHandler implements RabbitListenerErrorHandler {
             default -> new ErrorRabbitResponse(System.currentTimeMillis(),
                     ErrorStatusCode.INTERNAL_SERVER_ERROR.getCode(),
                     serviceName,
-                    exception.getCause().getMessage(),
+                    exception.getMessage(),
                     null);
         };
+    }
+
+    private boolean isReturn(org.springframework.messaging.Message<?> message) {
+        String methodName = (String) message.getHeaders().get(METHOD_HEADER);
+        String className = (String) message.getHeaders().get(SERVICE_HEADER);
+        Class<?> iClazz = Utils.getClassByName(this, className);
+        Map.Entry<Method, MethodHandle> methodEntry = Utils.getMethodEntry(methodHandles, iClazz, methodName);
+        Method method = methodEntry.getKey();
+        return !method.isAnnotationPresent(FireAndForget.class);
     }
 }
