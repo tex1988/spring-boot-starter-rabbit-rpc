@@ -1,4 +1,4 @@
-package com.github.tex1988.boot.rpc.rabbit.example.common.model;
+package io.github.tex1988.boot.rpc.rabbit.example.common.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -8,7 +8,7 @@
 		<version>3.3.6</version>
 		<relativePath/>
 	</parent>
-	<groupId>com.github.tex1988</groupId>
+	<groupId>io.github.tex1988</groupId>
 	<artifactId>spring-boot-starter-rabbit-rpc</artifactId>
 	<version>1.0.0-SNAPSHOT</version>
 	<name>spring-boot-starter-rabbit-rpc</name>

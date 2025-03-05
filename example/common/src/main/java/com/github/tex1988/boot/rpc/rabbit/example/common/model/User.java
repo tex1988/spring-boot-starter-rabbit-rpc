@@ -1,6 +1,6 @@
-package com.github.tex1988.boot.rpc.rabbit.example.common.model;
+package io.github.tex1988.boot.rpc.rabbit.example.common.model;
 
-import com.github.tex1988.boot.rpc.rabbit.example.common.validation.ValidUser;
+import io.github.tex1988.boot.rpc.rabbit.example.common.validation.ValidUser;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;

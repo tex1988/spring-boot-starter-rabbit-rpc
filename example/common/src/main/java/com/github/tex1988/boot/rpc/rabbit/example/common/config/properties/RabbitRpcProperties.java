@@ -1,4 +1,4 @@
-package com.github.tex1988.boot.rpc.rabbit.example.common.config.properties;
+package io.github.tex1988.boot.rpc.rabbit.example.common.config.properties;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -12,7 +12,7 @@ import org.springframework.validation.annotation.Validated;
 @Setter
 @Validated
 @AllArgsConstructor
-@ConfigurationProperties(prefix = "com.github.tex1988.rpc")
+@ConfigurationProperties(prefix = "io.github.tex1988.rpc")
 public class RabbitRpcProperties {
 
     @NotNull

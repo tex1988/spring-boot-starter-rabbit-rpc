@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
-		<groupId>com.github.tex1988</groupId>
+		<groupId>io.github.tex1988</groupId>
 		<artifactId>example</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
@@ -17,7 +17,7 @@
 			<artifactId>spring-boot-starter-amqp</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>com.github.tex1988</groupId>
+			<groupId>io.github.tex1988</groupId>
 			<artifactId>spring-boot-starter-rabbit-rpc</artifactId>
 		</dependency>
 		<dependency>

@@ -1,4 +1,4 @@
-package com.github.tex1988.boot.rpc.rabbit.example.common.validation;
+package io.github.tex1988.boot.rpc.rabbit.example.common.validation;
 
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;

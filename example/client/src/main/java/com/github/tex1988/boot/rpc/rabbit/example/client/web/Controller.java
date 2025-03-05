@@ -1,9 +1,9 @@
-package com.github.tex1988.boot.rpc.rabbit.example.client.web;
+package io.github.tex1988.boot.rpc.rabbit.example.client.web;
 
-import com.github.tex1988.boot.rpc.rabbit.example.common.model.Group;
-import com.github.tex1988.boot.rpc.rabbit.example.common.model.User;
-import com.github.tex1988.boot.rpc.rabbit.example.common.service.IGroupService;
-import com.github.tex1988.boot.rpc.rabbit.example.common.service.IUserService;
+import io.github.tex1988.boot.rpc.rabbit.example.common.model.Group;
+import io.github.tex1988.boot.rpc.rabbit.example.common.model.User;
+import io.github.tex1988.boot.rpc.rabbit.example.common.service.IGroupService;
+import io.github.tex1988.boot.rpc.rabbit.example.common.service.IUserService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.DeleteMapping;

@@ -1,6 +1,6 @@
-package com.github.tex1988.boot.rpc.rabbit.example.common.config;
+package io.github.tex1988.boot.rpc.rabbit.example.common.config;
 
-import com.github.tex1988.boot.rpc.rabbit.example.common.config.properties.RabbitRpcProperties;
+import io.github.tex1988.boot.rpc.rabbit.example.common.config.properties.RabbitRpcProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.support.converter.MessageConversionException;
@@ -17,7 +17,7 @@ import java.util.Map;
 
 @Configuration
 @PropertySource("classpath:application-rabbit-rpc.properties")
-@ConfigurationPropertiesScan("com.github.tex1988.boot.rpc.rabbit.example.common.config.properties")
+@ConfigurationPropertiesScan("io.github.tex1988.boot.rpc.rabbit.example.common.config.properties")
 @RequiredArgsConstructor
 public class DefaultConfig {
 

@@ -1,7 +1,7 @@
-package com.github.tex1988.boot.rpc.rabbit.example.common.service;
+package io.github.tex1988.boot.rpc.rabbit.example.common.service;
 
-import com.github.tex1988.boot.rpc.rabbit.annotation.RabbitRpcInterface;
-import com.github.tex1988.boot.rpc.rabbit.example.common.model.User;
+import io.github.tex1988.boot.rpc.rabbit.annotation.RabbitRpcInterface;
+import io.github.tex1988.boot.rpc.rabbit.example.common.model.User;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.validation.annotation.Validated;

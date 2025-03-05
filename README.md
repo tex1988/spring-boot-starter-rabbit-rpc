@@ -13,7 +13,7 @@ Both the client and server must have access to the same contracts and argument c
 1. Add the starter to your server and client projects and common library:
 ```xml
 <dependency>
-    <groupId>com.github.tex1988</groupId>
+    <groupId>io.github.tex1988</groupId>
     <artifactId>spring-boot-starter-rabbit-rpc</artifactId>
     <version>1.0.0-SNAPSHOT</version>
 </dependency>
@@ -62,16 +62,16 @@ For proper functionality, the starter enables serialization for the following pa
 
 - java.lang.*
 - java.util.*
-- com.github.tex1988.boot.rpc.rabbit.model.*
+- io.github.tex1988.boot.rpc.rabbit.model.*
 
 `scanBasePackages` property is used to specify the packages that will be scanned for RPC contracts (interfaces marked with `@RabbitRpcInterface`).
 ```java
 @EnableRabbitRpc(enableServer = true,
-        scanBasePackages = {"com.github.tex1988.boot.rpc.rabbit.example.common.service"},
-        allowedSerializationPatterns = {"com.github.tex1988.boot.rpc.rabbit.example.common.model.*"},
+        scanBasePackages = {"io.github.tex1988.boot.rpc.rabbit.example.common.service"},
+        allowedSerializationPatterns = {"io.github.tex1988.boot.rpc.rabbit.example.common.model.*"},
         concurrency = "5-10"
 )
-@SpringBootApplication(scanBasePackages = {"com.github.tex1988"})
+@SpringBootApplication(scanBasePackages = {"io.github.tex1988"})
 @PropertySource({
         "classpath:application-local.properties",
 })
@@ -121,11 +121,11 @@ The `@EnableRabbitRpc` annotation must be used to enable the RPC client with pro
 
 ```java
 @EnableRabbitRpc(enableClient = true,
-        scanBasePackages = {"com.github.tex1988.boot.rpc.rabbit.example.common.service"},
-        allowedSerializationPatterns = {"com.github.tex1988.boot.rpc.rabbit.example.common.model.*"},
+        scanBasePackages = {"io.github.tex1988.boot.rpc.rabbit.example.common.service"},
+        allowedSerializationPatterns = {"io.github.tex1988.boot.rpc.rabbit.example.common.model.*"},
         replyTimeout = 10000L
 )
-@SpringBootApplication(scanBasePackages = {"com.github.tex1988"})
+@SpringBootApplication(scanBasePackages = {"io.github.tex1988"})
 @PropertySource({
         "classpath:application-local.properties",
 })
@@ -160,7 +160,7 @@ If both the client and server implementations are in the same application, you c
 
 One application can act as both a client and a server. In this case, the `enableServer` and `enableClient` properties can be set to `true` simultaneously.
 
-For all `@EnableRabbitRpc` properties, see the [EnableRabbitRpc](src/main/java/com/github/tex1988/boot/rpc/rabbit/annotation/EnableRabbitRpc.java) class.
+For all `@EnableRabbitRpc` properties, see the [EnableRabbitRpc](src/main/java/io/github/tex1988/boot/rpc/rabbit/annotation/EnableRabbitRpc.java) class.
 
 ### Reference Documentation
 For further reference, please consider the following sections:

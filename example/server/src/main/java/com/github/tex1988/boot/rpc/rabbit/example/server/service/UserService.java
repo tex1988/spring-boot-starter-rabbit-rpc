@@ -1,8 +1,8 @@
-package com.github.tex1988.boot.rpc.rabbit.example.server.service;
+package io.github.tex1988.boot.rpc.rabbit.example.server.service;
 
-import com.github.tex1988.boot.rpc.rabbit.annotation.RabbitRpc;
-import com.github.tex1988.boot.rpc.rabbit.example.common.model.User;
-import com.github.tex1988.boot.rpc.rabbit.example.common.service.IUserService;
+import io.github.tex1988.boot.rpc.rabbit.annotation.RabbitRpc;
+import io.github.tex1988.boot.rpc.rabbit.example.common.model.User;
+import io.github.tex1988.boot.rpc.rabbit.example.common.service.IUserService;
 import org.springframework.stereotype.Service;
 import lombok.SneakyThrows;
 

@@ -1,7 +1,7 @@
-package com.github.tex1988.boot.rpc.rabbit.example.client.web;
+package io.github.tex1988.boot.rpc.rabbit.example.client.web;
 
-import com.github.tex1988.boot.rpc.rabbit.exception.RabbitRpcServiceException;
-import com.github.tex1988.boot.rpc.rabbit.exception.RabbitRpcServiceValidationException;
+import io.github.tex1988.boot.rpc.rabbit.exception.RabbitRpcServiceException;
+import io.github.tex1988.boot.rpc.rabbit.exception.RabbitRpcServiceValidationException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
