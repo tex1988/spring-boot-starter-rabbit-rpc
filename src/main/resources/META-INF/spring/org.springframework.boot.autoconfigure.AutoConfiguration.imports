@@ -1,2 +1,2 @@
 io.github.tex1988.boot.rpc.rabbit.autoconfigure.RabbitRpcExpressionResolverAutoConfigure
-autoconfigure.io.github.tex1988.boot.rpc.rabbit.RabbitRpcAutoConfigure
+io.github.tex1988.boot.rpc.rabbit.autoconfigure.RabbitRpcAutoConfigure
