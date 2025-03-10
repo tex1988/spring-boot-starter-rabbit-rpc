@@ -37,8 +37,14 @@
 		<system>GitHub</system>
 		<url>https://github.com/tex1988/spring-boot-starter-rabbit-rpc/issues</url>
 	</issueManagement>
+	<distributionManagement>
+		<repository>
+			<id>ossrh</id>
+			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+		</repository>
+	</distributionManagement>
 	<properties>
-		<java.version>21</java.version>
+		<java.version>17</java.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -78,6 +84,26 @@
 						</goals>
 					</execution>
 				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-gpg-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>sign-artifacts</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>sign</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<gpgArguments>
+						<arg>--batch</arg>
+						<arg>--passphrase</arg>
+						<arg>${env.GPG_PASSPHRASE}</arg>
+					</gpgArguments>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>

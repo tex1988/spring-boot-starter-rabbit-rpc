@@ -109,23 +109,27 @@ public class RabbitRpcErrorHandler implements RabbitListenerErrorHandler {
     }
 
     private ErrorRabbitResponse resolveByDefault(Throwable exception) {
-        return switch (exception) {
-            case RabbitRpcServiceValidationException e -> new ErrorRabbitResponse(e.getTimestamp(),
+        if (exception instanceof RabbitRpcServiceValidationException) {
+            RabbitRpcServiceValidationException e = (RabbitRpcServiceValidationException) exception;
+            return new ErrorRabbitResponse(e.getTimestamp(),
                     e.getStatusCode(),
                     e.getServiceName(),
                     e.getMessage(),
                     e.getBindingResult());
-            case RabbitRpcServiceException e -> new ErrorRabbitResponse(e.getTimestamp(),
+        } else if (exception instanceof RabbitRpcServiceException) {
+            RabbitRpcServiceException e = (RabbitRpcServiceException) exception;
+            return new ErrorRabbitResponse(e.getTimestamp(),
                     e.getStatusCode(),
                     e.getServiceName(),
                     e.getMessage(),
                     null);
-            default -> new ErrorRabbitResponse(System.currentTimeMillis(),
+        } else {
+            return new ErrorRabbitResponse(System.currentTimeMillis(),
                     ErrorStatusCode.INTERNAL_SERVER_ERROR.getCode(),
                     serviceName,
                     exception.getMessage(),
                     null);
-        };
+        }
     }
 
     private boolean isReturn(String className, String methodName) {

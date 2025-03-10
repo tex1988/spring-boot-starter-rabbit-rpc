@@ -168,7 +168,7 @@ class RabbitRpcAutoConfigure {
     private void processExchange(String exchange, Map<String, List<Object>> queues) {
         createOrConnectExchange(exchange, amqpAdmin);
         queues.forEach((queueName, beans) -> {
-            RabbitRpcInterface annotation = getRabbitRpcInterface(beans.getFirst().getClass()).getAnnotation(RabbitRpcInterface.class);
+            RabbitRpcInterface annotation = getRabbitRpcInterface(beans.get(0).getClass()).getAnnotation(RabbitRpcInterface.class);
             String routing = expressionResolver.resolveValue(annotation.routing());
             Queue queue = createQueue(queueName, exchange, routing, amqpAdmin);
             createMessageListenerContainer(queue);
@@ -213,7 +213,7 @@ class RabbitRpcAutoConfigure {
         if (interfaces.size() > 1) {
             throw new IllegalStateException("Multiple implementations of RabbitRpcInterface found on class " + clazz.getName());
         }
-        return interfaces.getFirst();
+        return interfaces.get(0);
     }
 
     @SneakyThrows
