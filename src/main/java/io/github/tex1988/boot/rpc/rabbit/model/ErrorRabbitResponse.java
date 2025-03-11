@@ -17,7 +17,6 @@ import java.util.Map;
  *     <li>The service name where the error originated</li>
  *     <li>The error message with details about the failure</li>
  * </ul>
- * </p>
  *
  * @author tex1988
  * @since 2024-04-12

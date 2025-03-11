@@ -15,7 +15,7 @@ Both the client and server must have access to the same contracts and argument c
 <dependency>
     <groupId>io.github.tex1988</groupId>
     <artifactId>spring-boot-starter-rabbit-rpc</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0-RELEASE</version>
 </dependency>
 ```
 spring-boot-starter-amqp also must be present in the classpath:

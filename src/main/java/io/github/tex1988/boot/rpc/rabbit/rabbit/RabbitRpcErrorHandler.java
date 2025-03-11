@@ -28,15 +28,13 @@ import static io.github.tex1988.boot.rpc.rabbit.constant.Constants.TYPE_ID_HEADE
  * This class provides a flexible implementation of {@link RabbitListenerErrorHandler} to enable custom error handling
  * logic for RabbitMQ listeners. Errors are categorized based on a mapping of exception types to {@link ErrorStatusCode},
  * or resolved using default behavior when no mapping is provided.
- * </p>
  * <p>
  * The handler supports:
  * <ul>
- *     <li>Validation errors (e.g., {@link RabbitRpcServiceValidationException}), returning {@link ErrorStatusCode#BAD_REQUEST}.</li>
- *     <li>Mapped exceptions, returning the associated {@link ErrorStatusCode} as defined in the {@code errorCodes} map.</li>
- *     <li>All other exceptions, returning {@link ErrorStatusCode#INTERNAL_SERVER_ERROR} by default.</li>
+ *     <li>Validation errors (e.g., {@link RabbitRpcServiceValidationException}), returning {@link ErrorStatusCode#BAD_REQUEST}</li>
+ *     <li>Mapped exceptions, returning the associated {@link ErrorStatusCode} as defined in the {@code errorCodes} map</li>
+ *     <li>All other exceptions, returning {@link ErrorStatusCode#INTERNAL_SERVER_ERROR} by default</li>
  * </ul>
- * </p>
  *
  * @author tex1988
  * @since 2024-04-12
