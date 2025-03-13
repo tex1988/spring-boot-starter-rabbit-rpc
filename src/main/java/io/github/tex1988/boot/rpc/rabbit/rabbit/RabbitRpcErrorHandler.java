@@ -1,5 +1,6 @@
 package io.github.tex1988.boot.rpc.rabbit.rabbit;
 
+import com.rabbitmq.client.Channel;
 import io.github.tex1988.boot.rpc.rabbit.annotation.FireAndForget;
 import io.github.tex1988.boot.rpc.rabbit.constant.ErrorStatusCode;
 import io.github.tex1988.boot.rpc.rabbit.exception.RabbitRpcServiceException;
@@ -92,6 +93,21 @@ public class RabbitRpcErrorHandler implements RabbitListenerErrorHandler {
         } else {
             return null;
         }
+    }
+
+    /**
+     * Handles errors that occur during the execution of RabbitMQ message listeners.
+     *
+     * @param amqpMessage the original AMQP message that caused the error
+     * @param channel     the AMQP channel for manual acks
+     * @param message     the converted Spring {@link org.springframework.messaging.Message}
+     * @param exception   the exception thrown during message processing
+     * @return a {@link Message} containing an {@link ErrorRabbitResponse} as the payload
+     */
+    @Override
+    public Object handleError(Message amqpMessage, Channel channel,
+                              org.springframework.messaging.Message<?> message, ListenerExecutionFailedException exception) {
+        return handleError(amqpMessage, message, exception);
     }
 
     private ErrorRabbitResponse resolveByMapping(Throwable exception) {
