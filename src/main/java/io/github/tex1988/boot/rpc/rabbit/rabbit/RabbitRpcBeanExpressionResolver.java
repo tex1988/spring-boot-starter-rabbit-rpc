@@ -23,6 +23,25 @@ public class RabbitRpcBeanExpressionResolver {
 
     @SuppressWarnings("unchecked")
     public <T> T resolveValue(String value) {
-        return (T) expressionResolver.evaluate(value, expressionContext);
+        if (value.startsWith("${")) {
+            return resolveProperty(value);
+        } else {
+            return (T) expressionResolver.evaluate(value, expressionContext);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> T resolveProperty(String value) {
+        if (value.contains(":#{")) {
+            String result = expressionContext.getBeanFactory().resolveEmbeddedValue(value);
+            String defaultExpression = value.substring(value.indexOf(":") + 1, value.length() - 1);
+            if (result == null || !result.equals(defaultExpression)) {
+                return (T) result;
+            } else {
+                return (T) expressionResolver.evaluate(defaultExpression, expressionContext);
+            }
+        } else {
+            return (T) expressionContext.getBeanFactory().resolveEmbeddedValue(value);
+        }
     }
 }
