@@ -44,7 +44,7 @@ public interface IUserService {
 ```
 The `exchange`, `queue`, and `routing` properties are SpEL (Spring Expression Language) expressions that are evaluated at runtime.
 
-Alternatively, direct values can be provided.
+Alternatively, property links `${property.name}` or direct values can be provided.
 
 If the specified `exchange` or `queue` already exists, they will be reused. Otherwise, the starter will create them automatically.
 
