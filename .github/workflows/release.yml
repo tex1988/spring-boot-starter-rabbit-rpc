@@ -1,34 +1,30 @@
-name: Release to Maven Central
-
+name: Publish Maven Central
+permissions:
+  contents: read
 on:
   release:
     types: [created]
-
+  workflow_dispatch:
 jobs:
-  build-and-deploy:
+  publish:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
+      - uses: actions/checkout@v4
+      - name: Set up Maven Central Repository
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
           java-version: '17'
-          server-id: ossrh
+          distribution: 'temurin'
+          server-id: central
           server-username: MAVEN_USERNAME
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
-
-      - name: Build with Maven
-        run: mvn clean package
-
-      - name: Deploy to Maven Central
+      - name: Set version
+        run: mvn versions:set -DnewVersion=${{ github.event.release.tag_name }}
+      - name: Publish package
+        run: mvn --batch-mode deploy -DskipTests
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-        run: mvn deploy --batch-mode --no-transfer-progress
