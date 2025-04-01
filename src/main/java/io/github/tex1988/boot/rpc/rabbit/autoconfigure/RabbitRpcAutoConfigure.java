@@ -5,6 +5,7 @@ import io.github.tex1988.boot.rpc.rabbit.annotation.RabbitRpc;
 import io.github.tex1988.boot.rpc.rabbit.annotation.RabbitRpcInterface;
 import io.github.tex1988.boot.rpc.rabbit.model.RabbitRpcErrorMapping;
 import io.github.tex1988.boot.rpc.rabbit.rabbit.RabbitRpcBeanExpressionResolver;
+import io.github.tex1988.boot.rpc.rabbit.rabbit.RabbitRpcClientProxyFactory;
 import io.github.tex1988.boot.rpc.rabbit.rabbit.RabbitRpcErrorHandler;
 import io.github.tex1988.boot.rpc.rabbit.rabbit.RabbitRpcMessageHandler;
 import io.github.tex1988.boot.rpc.rabbit.validator.RabbitRpcValidator;
@@ -29,7 +30,9 @@ import org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
+import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.boot.autoconfigure.amqp.SimpleRabbitListenerContainerFactoryConfigurer;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.context.ApplicationContext;
@@ -101,11 +104,14 @@ class RabbitRpcAutoConfigure {
     }
 
     private void initRabbitTemplate(EnableRabbitRpc annotation) {
+        ConfigurableListableBeanFactory beanFactory =  ((ConfigurableApplicationContext) applicationContext).getBeanFactory();
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
         rabbitTemplate.setMessageConverter(getRpcMessageConverter(annotation));
         rabbitTemplate.setReplyTimeout(annotation.replyTimeout());
-        ((ConfigurableApplicationContext) applicationContext).getBeanFactory()
-                .registerSingleton(RPC_RABBIT_TEMPLATE_BEAN_NAME, rabbitTemplate);
+        beanFactory.registerSingleton(RPC_RABBIT_TEMPLATE_BEAN_NAME, rabbitTemplate);
+        Map<String, RabbitRpcClientProxyFactory> proxyFactories =  beanFactory.getBeansOfType(RabbitRpcClientProxyFactory.class);
+        proxyFactories.forEach((name, factory) ->
+                factory.setMessageTtl(String.valueOf(annotation.replyTimeout())));
     }
 
     private void initRabbitListenerContainerFactory(EnableRabbitRpc annotation) {
@@ -130,7 +136,7 @@ class RabbitRpcAutoConfigure {
     private void createMethodHandles(List<Object> beanList) {
         MethodHandles.Lookup lookup = MethodHandles.publicLookup();
         Map<Class<?>, List<Object>> beanMap = beanList.stream()
-                .collect(Collectors.groupingBy(bean -> getRabbitRpcInterface(bean.getClass()), Collectors.toList()));
+                .collect(Collectors.groupingBy(this::getRabbitRpcInterface, Collectors.toList()));
         beanMap.forEach((iClass, beans) -> beans.forEach(bean ->
                 createMethodHandles(bean, iClass, lookup)));
     }
@@ -159,16 +165,16 @@ class RabbitRpcAutoConfigure {
     private Map<String, Map<String, List<Object>>> getBeanMap(List<Object> beanList) {
         return beanList.stream()
                 .collect(Collectors.groupingBy(bean -> Objects.requireNonNull(
-                                expressionResolver.resolveValue(getRabbitRpcInterface(bean.getClass()).getAnnotation(RabbitRpcInterface.class).exchange())),
+                                expressionResolver.resolveValue(getRabbitRpcInterface(bean).getAnnotation(RabbitRpcInterface.class).exchange())),
                         Collectors.groupingBy(bean -> Objects.requireNonNull(
-                                        expressionResolver.resolveValue(getRabbitRpcInterface(bean.getClass()).getAnnotation(RabbitRpcInterface.class).queue())),
+                                        expressionResolver.resolveValue(getRabbitRpcInterface(bean).getAnnotation(RabbitRpcInterface.class).queue())),
                                 Collectors.toList())));
     }
 
     private void processExchange(String exchange, Map<String, List<Object>> queues) {
         createOrConnectExchange(exchange, amqpAdmin);
         queues.forEach((queueName, beans) -> {
-            RabbitRpcInterface annotation = getRabbitRpcInterface(beans.get(0).getClass()).getAnnotation(RabbitRpcInterface.class);
+            RabbitRpcInterface annotation = getRabbitRpcInterface(beans.get(0)).getAnnotation(RabbitRpcInterface.class);
             String routing = expressionResolver.resolveValue(annotation.routing());
             Queue queue = createQueue(queueName, exchange, routing, amqpAdmin);
             createMessageListenerContainer(queue);
@@ -203,7 +209,8 @@ class RabbitRpcAutoConfigure {
         }
     }
 
-    private Class<?> getRabbitRpcInterface(Class<?> clazz) {
+    private Class<?> getRabbitRpcInterface(Object candidate) {
+        Class<?> clazz = AopUtils.getTargetClass(candidate);
         List<Class<?>> interfaces = Arrays.stream(clazz.getInterfaces())
                 .filter(i -> i.isAnnotationPresent(RabbitRpcInterface.class))
                 .toList();

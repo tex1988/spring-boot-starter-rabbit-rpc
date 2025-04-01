@@ -7,6 +7,7 @@ import io.github.tex1988.boot.rpc.rabbit.exception.RabbitRpcServiceException;
 import io.github.tex1988.boot.rpc.rabbit.exception.RabbitRpcServiceValidationException;
 import io.github.tex1988.boot.rpc.rabbit.model.ErrorRabbitResponse;
 import jakarta.annotation.PostConstruct;
+import lombok.Setter;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -35,6 +36,8 @@ public class RabbitRpcClientProxyFactory<T> implements FactoryBean<T> {
     private final RabbitRpcInterface annotation;
     private final String serviceName;
 
+    @Setter
+    private String messageTtl;
     private String exchange;
     private String routing;
 
@@ -80,12 +83,7 @@ public class RabbitRpcClientProxyFactory<T> implements FactoryBean<T> {
                 return objectToString(proxy);
             }
 
-            MessagePostProcessor postProcessor = message -> {
-                MessageProperties properties = message.getMessageProperties();
-                properties.setHeader(SERVICE_HEADER, interfaceType.getCanonicalName());
-                properties.setHeader(METHOD_HEADER, method.getName());
-                return message;
-            };
+            MessagePostProcessor postProcessor = getMessagePostProcessor(method.getName());
 
             if (method.isAnnotationPresent(FireAndForget.class)) {
                 rabbitTemplate.convertAndSend(exchange, routing, args, postProcessor);
@@ -105,6 +103,18 @@ public class RabbitRpcClientProxyFactory<T> implements FactoryBean<T> {
     @Override
     public Class<?> getObjectType() {
         return interfaceType;
+    }
+
+    private MessagePostProcessor getMessagePostProcessor(String methodName) {
+        return message -> {
+            MessageProperties properties = message.getMessageProperties();
+            properties.setHeader(SERVICE_HEADER, interfaceType.getCanonicalName());
+            properties.setHeader(METHOD_HEADER, methodName);
+            if (messageTtl != null && !messageTtl.isEmpty()) {
+                properties.setExpiration(messageTtl);
+            }
+            return message;
+        };
     }
 
     @SuppressWarnings("unchecked")
