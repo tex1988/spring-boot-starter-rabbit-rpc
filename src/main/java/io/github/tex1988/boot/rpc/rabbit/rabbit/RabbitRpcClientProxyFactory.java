@@ -85,6 +85,10 @@ public class RabbitRpcClientProxyFactory<T> implements FactoryBean<T> {
 
             MessagePostProcessor postProcessor = getMessagePostProcessor(method.getName());
 
+            if (args == null) {
+                args = new Object[0];
+            }
+
             if (method.isAnnotationPresent(FireAndForget.class)) {
                 rabbitTemplate.convertAndSend(exchange, routing, args, postProcessor);
                 return null;
