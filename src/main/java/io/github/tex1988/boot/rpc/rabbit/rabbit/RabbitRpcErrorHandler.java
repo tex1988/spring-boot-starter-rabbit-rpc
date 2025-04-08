@@ -11,6 +11,7 @@ import io.github.tex1988.boot.rpc.rabbit.util.Utils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.messaging.support.MessageBuilder;
@@ -74,8 +75,8 @@ public class RabbitRpcErrorHandler implements RabbitListenerErrorHandler {
                               ListenerExecutionFailedException exception) {
         Throwable cause = exception.getCause();
         ErrorRabbitResponse response;
-        String methodName = (String) message.getHeaders().get(METHOD_HEADER);
-        String className = (String) message.getHeaders().get(SERVICE_HEADER);
+        String methodName = getHeader(amqpMessage, METHOD_HEADER);
+        String className = getHeader(amqpMessage, SERVICE_HEADER);
         if (errorCodes != null && errorCodes.containsKey(cause.getClass())) {
             response = resolveByMapping(cause);
         } else {
@@ -151,5 +152,16 @@ public class RabbitRpcErrorHandler implements RabbitListenerErrorHandler {
         Map.Entry<Method, MethodHandle> methodEntry = Utils.getMethodEntry(methodHandles, iClazz, methodName);
         Method method = methodEntry.getKey();
         return !method.isAnnotationPresent(FireAndForget.class);
+    }
+
+    private String getHeader(Message amqpMessage, String header) {
+        MessageProperties properties = amqpMessage.getMessageProperties();
+        if (properties != null) {
+            Map<String, Object> headers = properties.getHeaders();
+            if (headers != null && !headers.isEmpty()) {
+                return (String) headers.get(header);
+            }
+        }
+        return null;
     }
 }
