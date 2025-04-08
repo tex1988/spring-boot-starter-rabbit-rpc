@@ -1,5 +1,6 @@
 package io.github.tex1988.boot.rpc.rabbit.autoconfigure;
 
+import com.rabbitmq.client.Channel;
 import io.github.tex1988.boot.rpc.rabbit.annotation.EnableRabbitRpc;
 import io.github.tex1988.boot.rpc.rabbit.annotation.RabbitRpc;
 import io.github.tex1988.boot.rpc.rabbit.annotation.RabbitRpcInterface;
@@ -9,7 +10,6 @@ import io.github.tex1988.boot.rpc.rabbit.rabbit.RabbitRpcClientProxyFactory;
 import io.github.tex1988.boot.rpc.rabbit.rabbit.RabbitRpcErrorHandler;
 import io.github.tex1988.boot.rpc.rabbit.rabbit.RabbitRpcMessageHandler;
 import io.github.tex1988.boot.rpc.rabbit.validator.RabbitRpcValidator;
-import com.rabbitmq.client.Channel;
 import jakarta.annotation.PostConstruct;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +30,6 @@ import org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
-import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.boot.autoconfigure.amqp.SimpleRabbitListenerContainerFactoryConfigurer;
@@ -40,6 +39,7 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory;
+import org.springframework.util.ClassUtils;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -210,7 +210,7 @@ class RabbitRpcAutoConfigure {
     }
 
     private Class<?> getRabbitRpcInterface(Object candidate) {
-        Class<?> clazz = AopUtils.getTargetClass(candidate);
+        Class<?> clazz = ClassUtils.getUserClass(candidate);
         List<Class<?>> interfaces = Arrays.stream(clazz.getInterfaces())
                 .filter(i -> i.isAnnotationPresent(RabbitRpcInterface.class))
                 .toList();
