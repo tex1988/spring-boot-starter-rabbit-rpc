@@ -18,15 +18,18 @@ import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
+import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueInformation;
+import org.springframework.amqp.rabbit.config.RabbitListenerConfigUtils;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint;
+import org.springframework.amqp.rabbit.listener.MissingQueueEvent;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
@@ -69,7 +72,6 @@ class RabbitRpcAutoConfigure {
     private final ConnectionFactory connectionFactory;
     private final SimpleRabbitListenerContainerFactoryConfigurer configurer;
     private final DefaultMessageHandlerMethodFactory messageHandlerMethodFactory = new DefaultMessageHandlerMethodFactory();
-    private final RabbitListenerEndpointRegistry registry;
     private final AmqpAdmin amqpAdmin;
     private final Validator validator;
     private final Map<Class<?>, Map<Method, MethodHandle>> methodHandles = new ConcurrentHashMap<>();
@@ -104,12 +106,12 @@ class RabbitRpcAutoConfigure {
     }
 
     private void initRabbitTemplate(EnableRabbitRpc annotation) {
-        ConfigurableListableBeanFactory beanFactory =  ((ConfigurableApplicationContext) applicationContext).getBeanFactory();
+        ConfigurableListableBeanFactory beanFactory = ((ConfigurableApplicationContext) applicationContext).getBeanFactory();
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
         rabbitTemplate.setMessageConverter(getRpcMessageConverter(annotation));
         rabbitTemplate.setReplyTimeout(annotation.replyTimeout());
         beanFactory.registerSingleton(RPC_RABBIT_TEMPLATE_BEAN_NAME, rabbitTemplate);
-        Map<String, RabbitRpcClientProxyFactory> proxyFactories =  beanFactory.getBeansOfType(RabbitRpcClientProxyFactory.class);
+        Map<String, RabbitRpcClientProxyFactory> proxyFactories = beanFactory.getBeansOfType(RabbitRpcClientProxyFactory.class);
         proxyFactories.forEach((name, factory) ->
                 factory.setMessageTtl(String.valueOf(annotation.replyTimeout())));
     }
@@ -118,9 +120,14 @@ class RabbitRpcAutoConfigure {
         rabbitListenerContainerFactory = new SimpleRabbitListenerContainerFactory();
         configurer.configure(rabbitListenerContainerFactory, connectionFactory);
         rabbitListenerContainerFactory.setMessageConverter(messageConverter);
-        rabbitListenerContainerFactory.setDefaultRequeueRejected(false);
         rabbitListenerContainerFactory.setFailedDeclarationRetryInterval(10000L);
         rabbitListenerContainerFactory.setMissingQueuesFatal(false);
+        rabbitListenerContainerFactory.setDefaultRequeueRejected(true);
+        rabbitListenerContainerFactory.setApplicationEventPublisher(event -> {
+            if (event instanceof MissingQueueEvent mqe) {
+                recoverQueue(mqe);
+            }
+        });
         List<Integer> concurrency = getConcurrency(annotation);
         if (!concurrency.isEmpty()) {
             rabbitListenerContainerFactory.setConcurrentConsumers(concurrency.get(0));
@@ -235,7 +242,12 @@ class RabbitRpcAutoConfigure {
         endpoint.setMethod(handleMethod);
         endpoint.setErrorHandler(errorHandler);
         endpoint.setMessageHandlerMethodFactory(messageHandlerMethodFactory);
-        registry.registerListenerContainer(endpoint, rabbitListenerContainerFactory, true);
+        endpoint.setBeanFactory(applicationContext);
+        endpoint.setAdmin(amqpAdmin);
+        RabbitListenerEndpointRegistry registry = applicationContext.getBean(
+                RabbitListenerConfigUtils.RABBIT_LISTENER_ENDPOINT_REGISTRY_BEAN_NAME,
+                RabbitListenerEndpointRegistry.class);
+        registry.registerListenerContainer(endpoint, rabbitListenerContainerFactory);
     }
 
     private RabbitListenerErrorHandler getErrorHandler(EnableRabbitRpc annotation, Map<Class<?>, Map<Method, MethodHandle>> methodHandles) {
@@ -312,5 +324,27 @@ class RabbitRpcAutoConfigure {
             errorMapping = null;
         }
         return errorMapping;
+    }
+
+    private void recoverQueue(MissingQueueEvent event) {
+        applicationContext.getBeansOfType(Queue.class).values().stream()
+                .filter(q -> q.getName().equals(event.getQueue()))
+                .findFirst().ifPresent(this::recoverQueue);
+    }
+
+    private void recoverQueue(Queue queue) {
+        applicationContext.getBeansOfType(Binding.class).values().stream()
+                .filter(b -> b.getDestination().equals(queue.getName()))
+                .findFirst().ifPresent(b -> recoverQueue(queue, b));
+    }
+
+    private void recoverQueue(Queue queue, Binding binding) {
+        applicationContext.getBeansOfType(Exchange.class).values().stream()
+                .filter(e -> e.getName().equals(binding.getExchange()))
+                .findFirst().ifPresent(exchange -> {
+                    amqpAdmin.declareExchange(exchange);
+                    amqpAdmin.declareQueue(queue);
+                    amqpAdmin.declareBinding(binding);
+                });
     }
 }

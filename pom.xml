@@ -10,7 +10,7 @@
     </parent>
     <groupId>io.github.tex1988</groupId>
     <artifactId>spring-boot-starter-rabbit-rpc</artifactId>
-    <version>1.0.2-SNAPSHOT</version>
+    <version>1.0.3-SNAPSHOT</version>
     <name>spring-boot-starter-rabbit-rpc</name>
     <description>Spring Boot starter and implementation of RPC over RabbitMQ (spring-boot-starter-amqp)</description>
     <licenses>
