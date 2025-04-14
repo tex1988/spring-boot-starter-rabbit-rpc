@@ -135,7 +135,7 @@ class RabbitRpcAutoConfigure {
                 rabbitListenerContainerFactory.setMaxConcurrentConsumers(concurrency.get(1));
             }
         }
-        if (annotation.executor() != null) {
+        if (annotation.executor() != null && !annotation.executor().isEmpty()) {
             rabbitListenerContainerFactory.setTaskExecutor(getTaskExecutor(annotation));
         }
     }
