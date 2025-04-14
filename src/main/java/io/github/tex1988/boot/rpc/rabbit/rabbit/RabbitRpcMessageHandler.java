@@ -1,6 +1,7 @@
 package io.github.tex1988.boot.rpc.rabbit.rabbit;
 
 import io.github.tex1988.boot.rpc.rabbit.annotation.FireAndForget;
+import io.github.tex1988.boot.rpc.rabbit.model.NullResponse;
 import io.github.tex1988.boot.rpc.rabbit.model.VoidRabbitResponse;
 import io.github.tex1988.boot.rpc.rabbit.util.Utils;
 import io.github.tex1988.boot.rpc.rabbit.validator.RabbitRpcValidator;
@@ -16,6 +17,7 @@ import org.springframework.messaging.support.MessageBuilder;
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Method;
 import java.util.Map;
+import java.util.Objects;
 
 import static io.github.tex1988.boot.rpc.rabbit.constant.Constants.METHOD_HEADER;
 import static io.github.tex1988.boot.rpc.rabbit.constant.Constants.SERVICE_HEADER;
@@ -96,10 +98,19 @@ public class RabbitRpcMessageHandler {
         if (method.isAnnotationPresent(FireAndForget.class)) {
             return null;
         } else {
-            // Build and return a response message
-            return MessageBuilder.withPayload(returnType.equals(Void.TYPE) ? new VoidRabbitResponse() : result)
-                    .setHeader(TYPE_ID_HEADER, returnType.getCanonicalName())
-                    .build();
+            return getResponse(returnType, result);
         }
+    }
+
+    private Object getResponse(Class<?> returnType, Object result) {
+        Object payload;
+        if (returnType.equals(Void.TYPE)) {
+            payload = new VoidRabbitResponse();
+        } else {
+            payload = Objects.requireNonNullElseGet(result, NullResponse::new);
+        }
+        return MessageBuilder.withPayload(payload)
+                .setHeader(TYPE_ID_HEADER, returnType.getCanonicalName())
+                .build();
     }
 }

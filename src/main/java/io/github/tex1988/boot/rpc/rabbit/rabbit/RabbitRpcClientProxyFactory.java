@@ -6,6 +6,7 @@ import io.github.tex1988.boot.rpc.rabbit.constant.ErrorStatusCode;
 import io.github.tex1988.boot.rpc.rabbit.exception.RabbitRpcServiceException;
 import io.github.tex1988.boot.rpc.rabbit.exception.RabbitRpcServiceValidationException;
 import io.github.tex1988.boot.rpc.rabbit.model.ErrorRabbitResponse;
+import io.github.tex1988.boot.rpc.rabbit.model.NullResponse;
 import jakarta.annotation.PostConstruct;
 import lombok.Setter;
 import org.springframework.amqp.core.MessagePostProcessor;
@@ -128,6 +129,9 @@ public class RabbitRpcClientProxyFactory<T> implements FactoryBean<T> {
         }
         if (response instanceof ErrorRabbitResponse errorResponse) {
             handleErrorResponse(errorResponse);
+        }
+        if (response instanceof NullResponse) {
+            return null;
         }
         return (R) response;
     }
