@@ -4,7 +4,7 @@ Spring Boot starter and implementation of RPC over RabbitMQ (spring-boot-starter
 # Read Me First
 This project is a Spring Boot starter that enables the use of RabbitMQ as a transport layer for remote procedure calls (RPC).
 It acts as an abstraction over spring-boot-starter-amqp, leveraging most of its settings while allowing some of them to be overridden.
-The project uses Java interfaces as RPC contracts and Java serialization for RabbitMQ message serialization.
+The project uses Java interfaces as RPC contracts and Kryo 5 for RabbitMQ message serialization.
 
 The primary use case is to define contract interfaces and argument classes in separate modules, which can then be shared across different applications.
 Both the client and server must have access to the same contracts and argument classes for seamless communication.
@@ -15,7 +15,7 @@ Both the client and server must have access to the same contracts and argument c
 <dependency>
     <groupId>io.github.tex1988</groupId>
     <artifactId>spring-boot-starter-rabbit-rpc</artifactId>
-    <version>1.0.2</version>
+    <version>1.1.0</version>
 </dependency>
 ```
 spring-boot-starter-amqp also must be present in the classpath:
@@ -56,7 +56,9 @@ The `@FireAndForget` annotation can be used to mark a method as fire-and-forget.
 
 The `@EnableRabbitRpc` annotation must be used to enable the RPC server with property `enableServer = true`. 
 
-This library uses Java serialization for message serialization, so the `allowedSerializationPatterns` property must be provided to specify which packages are allowed for serialization.
+This library uses Kryo 5 serialization library for message serialization.
+
+`allowedSerializationPatterns` property must be provided to specify which packages are allowed for serialization.
 
 For proper functionality, the starter enables serialization for the following packages by default:
 

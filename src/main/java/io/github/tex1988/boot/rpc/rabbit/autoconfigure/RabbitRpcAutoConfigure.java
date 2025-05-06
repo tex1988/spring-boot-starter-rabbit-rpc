@@ -4,6 +4,7 @@ import com.rabbitmq.client.Channel;
 import io.github.tex1988.boot.rpc.rabbit.annotation.EnableRabbitRpc;
 import io.github.tex1988.boot.rpc.rabbit.annotation.RabbitRpc;
 import io.github.tex1988.boot.rpc.rabbit.annotation.RabbitRpcInterface;
+import io.github.tex1988.boot.rpc.rabbit.converter.Kryo5MessageConverter;
 import io.github.tex1988.boot.rpc.rabbit.model.RabbitRpcErrorMapping;
 import io.github.tex1988.boot.rpc.rabbit.rabbit.RabbitRpcBeanExpressionResolver;
 import io.github.tex1988.boot.rpc.rabbit.rabbit.RabbitRpcClientProxyFactory;
@@ -31,7 +32,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
-import org.springframework.amqp.support.converter.SimpleMessageConverter;
+import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.boot.autoconfigure.amqp.SimpleRabbitListenerContainerFactoryConfigurer;
@@ -76,8 +77,8 @@ class RabbitRpcAutoConfigure {
     private final Map<Class<?>, Map<Method, MethodHandle>> methodHandles = new ConcurrentHashMap<>();
     private final RabbitRpcBeanExpressionResolver expressionResolver;
 
+    private MessageConverter messageConverter;
     private SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory;
-    private SimpleMessageConverter messageConverter;
     private RabbitListenerErrorHandler errorHandler;
 
     @Bean
@@ -89,6 +90,7 @@ class RabbitRpcAutoConfigure {
     public void init() {
         EnableRabbitRpc annotation = getEnableRabbitRpc();
         if (annotation != null && (annotation.enableClient() || annotation.enableServer())) {
+            messageConverter = getRpcMessageConverter(annotation);
             initRabbitTemplate(annotation);
         }
         if (annotation != null && annotation.enableServer()) {
@@ -108,11 +110,10 @@ class RabbitRpcAutoConfigure {
     private void initRabbitTemplate(EnableRabbitRpc annotation) {
         ConfigurableListableBeanFactory beanFactory = ((ConfigurableApplicationContext) applicationContext).getBeanFactory();
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
-        rabbitTemplate.setMessageConverter(getRpcMessageConverter(annotation));
+        rabbitTemplate.setMessageConverter(messageConverter);
         rabbitTemplate.setReplyTimeout(annotation.replyTimeout());
         beanFactory.registerSingleton(RPC_RABBIT_TEMPLATE_BEAN_NAME, rabbitTemplate);
-        Map<String, RabbitRpcClientProxyFactory> proxyFactories = beanFactory.getBeansOfType(RabbitRpcClientProxyFactory.class);
-        proxyFactories.forEach((name, factory) ->
+        beanFactory.getBeansOfType(RabbitRpcClientProxyFactory.class).forEach((name, factory) ->
                 factory.setMessageTtl(String.valueOf(annotation.replyTimeout())));
     }
 
@@ -148,16 +149,12 @@ class RabbitRpcAutoConfigure {
     @SneakyThrows
     private void createMethodHandles(Object bean, Class<?> iClazz, MethodHandles.Lookup lookup) {
         Map<Method, MethodHandle> beanMethodHandles = new ConcurrentHashMap<>();
-        Arrays.stream(iClazz.getMethods()).forEach(m -> {
-            Class<?>[] argTypes = m.getParameterTypes();
-            MethodType mt = MethodType.methodType(m.getReturnType(), argTypes);
-            try {
-                MethodHandle mh = lookup.findVirtual(bean.getClass(), m.getName(), mt).bindTo(bean);
-                beanMethodHandles.put(m, mh);
-            } catch (NoSuchMethodException | IllegalAccessException e) {
-                throw new RuntimeException(e);
-            }
-        });
+        for (Method method : iClazz.getMethods()) {
+            Class<?>[] argTypes = method.getParameterTypes();
+            MethodType mt = MethodType.methodType(method.getReturnType(), argTypes);
+            MethodHandle mh = lookup.findVirtual(bean.getClass(), method.getName(), mt).bindTo(bean);
+            beanMethodHandles.put(method, mh);
+        }
         methodHandles.put(iClazz, beanMethodHandles);
     }
 
@@ -168,18 +165,14 @@ class RabbitRpcAutoConfigure {
 
     private Map<String, Map<String, List<Object>>> getBeanMap(List<Object> beanList) {
         return beanList.stream()
-                .collect(Collectors.groupingBy(bean -> Objects.requireNonNull(
-                                expressionResolver.resolveValue(getRabbitRpcInterface(bean).getAnnotation(RabbitRpcInterface.class).exchange())),
-                        Collectors.groupingBy(bean -> Objects.requireNonNull(
-                                        expressionResolver.resolveValue(getRabbitRpcInterface(bean).getAnnotation(RabbitRpcInterface.class).queue())),
-                                Collectors.toList())));
+                .collect(Collectors.groupingBy(this::resolveExchangeName,
+                        Collectors.groupingBy(this::resolveQueueName, Collectors.toList())));
     }
 
     private void processExchange(String exchange, Map<String, List<Object>> queues) {
         createOrConnectExchange(exchange, amqpAdmin);
         queues.forEach((queueName, beans) -> {
-            RabbitRpcInterface annotation = getRabbitRpcInterface(beans.get(0)).getAnnotation(RabbitRpcInterface.class);
-            String routing = expressionResolver.resolveValue(annotation.routing());
+            String routing = resolveRouting(beans.get(0));
             Queue queue = createQueue(queueName, exchange, routing, amqpAdmin);
             createMessageListenerContainer(queue);
         });
@@ -193,7 +186,7 @@ class RabbitRpcAutoConfigure {
                 DirectExchange exchange = new DirectExchange(exchangeName, false, true);
                 amqpAdmin.declareExchange(exchange);
             } else {
-                throw new RuntimeException("Failed to check exchange existence: " + e.getMessage(), e);
+                throw new IllegalStateException("Failed to check exchange existence: " + e.getMessage(), e);
             }
         }
     }
@@ -219,12 +212,33 @@ class RabbitRpcAutoConfigure {
                 .filter(i -> i.isAnnotationPresent(RabbitRpcInterface.class))
                 .toList();
         if (interfaces.isEmpty()) {
-            throw new IllegalStateException("No implementations of RabbitRpcInterface found on class " + clazz.getName());
+            throw new IllegalStateException("No implementations of RabbitRpcInterface found for class " + clazz.getName());
         }
         if (interfaces.size() > 1) {
-            throw new IllegalStateException("Multiple implementations of RabbitRpcInterface found on class " + clazz.getName());
+            throw new IllegalStateException("Multiple implementations of RabbitRpcInterface found for class " + clazz.getName());
         }
         return interfaces.get(0);
+    }
+
+    private String resolveExchangeName(Object bean) {
+        Class<?> iClass = getRabbitRpcInterface(bean);
+        RabbitRpcInterface annotation = Objects.requireNonNull(iClass.getAnnotation(RabbitRpcInterface.class));
+        return Objects.requireNonNull(expressionResolver.resolveValue(annotation.exchange()),
+                "Exchange name cannot be null. Define exchange property of @RabbitRpcInterface annotation for " + iClass.getName());
+    }
+
+    private String resolveQueueName(Object bean) {
+        Class<?> iClass = getRabbitRpcInterface(bean);
+        RabbitRpcInterface annotation = Objects.requireNonNull(iClass.getAnnotation(RabbitRpcInterface.class));
+        return Objects.requireNonNull(expressionResolver.resolveValue(annotation.queue()),
+                "Queue name cannot be null. Define queue property of @RabbitRpcInterface annotation for " + iClass.getName());
+    }
+
+    private String resolveRouting(Object bean) {
+        Class<?> iClass = getRabbitRpcInterface(bean);
+        RabbitRpcInterface annotation = Objects.requireNonNull(iClass.getAnnotation(RabbitRpcInterface.class));
+        return Objects.requireNonNull(expressionResolver.resolveValue(annotation.routing()),
+                "Routing cannot be null. Define routing property of @RabbitRpcInterface annotation for " + iClass.getName());
     }
 
     @SneakyThrows
@@ -257,21 +271,21 @@ class RabbitRpcAutoConfigure {
         }
     }
 
-    private SimpleMessageConverter getRpcMessageConverter(EnableRabbitRpc annotation) {
-        if (messageConverter == null) {
+    private MessageConverter getRpcMessageConverter(EnableRabbitRpc annotation) {
+        String converterBeanName = expressionResolver.resolveValue(annotation.messageConverter());
+        if (converterBeanName != null && !converterBeanName.isBlank()) {
+            return applicationContext.getBean(converterBeanName, MessageConverter.class);
+        } else {
             String[] allowedSerializationPatterns;
             if (annotation.allowedSerializationPatterns() != null) {
                 allowedSerializationPatterns = annotation.allowedSerializationPatterns();
             } else {
                 allowedSerializationPatterns = new String[0];
             }
-            SimpleMessageConverter simpleMessageConverter = new SimpleMessageConverter();
-            simpleMessageConverter.setAllowedListPatterns(Stream.concat(Arrays.stream(allowedSerializationPatterns),
+            Kryo5MessageConverter converter = new Kryo5MessageConverter();
+            converter.setAllowedListPatterns(Stream.concat(Arrays.stream(allowedSerializationPatterns),
                     DEFAULT_ALLOWED_SERIALIZATION_PATTERNS.stream()).toList());
-            messageConverter = simpleMessageConverter;
-            return simpleMessageConverter;
-        } else {
-            return messageConverter;
+            return converter;
         }
     }
 

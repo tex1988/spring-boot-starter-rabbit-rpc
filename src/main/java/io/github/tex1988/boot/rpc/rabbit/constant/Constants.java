@@ -1,7 +1,11 @@
 package io.github.tex1988.boot.rpc.rabbit.constant;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+
 import java.util.List;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class Constants {
 
     public static final String SERVICE_HEADER = "__Service__";

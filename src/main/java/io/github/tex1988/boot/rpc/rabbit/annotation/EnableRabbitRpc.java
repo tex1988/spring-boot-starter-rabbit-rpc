@@ -63,6 +63,12 @@ public @interface EnableRabbitRpc {
     String executor() default "";
 
     /**
+     * @return the bean name of message converter for the message listener container,
+     * By default, {@code KryoMessageConverter} will be used.
+     */
+    String messageConverter() default "";
+
+    /**
      * @return the reply timeout for the RPC client, if {@link #enableClient()} is {@code true}.
      * Default is {@code 5000} milliseconds.
      */
