@@ -2,6 +2,7 @@ package io.github.tex1988.boot.rpc.rabbit.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 
 import java.io.Serializable;
@@ -22,6 +23,7 @@ import java.util.Map;
  * @since 2024-04-12
  */
 @Data
+@NoArgsConstructor
 @AllArgsConstructor
 @RequiredArgsConstructor
 public class ErrorRabbitResponse implements Serializable {

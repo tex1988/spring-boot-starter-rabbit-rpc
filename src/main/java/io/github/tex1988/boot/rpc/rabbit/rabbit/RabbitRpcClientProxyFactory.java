@@ -49,7 +49,7 @@ public class RabbitRpcClientProxyFactory<T> implements FactoryBean<T> {
             EQUALS = objClass.getDeclaredMethod("equals", objClass);
             TO_STRING = objClass.getDeclaredMethod("toString");
         } catch (NoSuchMethodException e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException(e);
         }
     }
 

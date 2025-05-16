@@ -2,6 +2,7 @@ package io.github.tex1988.boot.rpc.rabbit.validator;
 
 import io.github.tex1988.boot.rpc.rabbit.constant.ErrorStatusCode;
 import io.github.tex1988.boot.rpc.rabbit.exception.RabbitRpcServiceValidationException;
+import io.github.tex1988.boot.rpc.rabbit.util.Utils;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Valid;
 import jakarta.validation.Validator;
@@ -67,7 +68,7 @@ public class RabbitRpcValidator {
             });
             String errorMessage = "Validation failed for fields: " + String.join(", ",
                     bindingResult.keySet().stream().sorted().toList());
-            throw new RabbitRpcServiceValidationException(System.currentTimeMillis(), serviceName,
+            throw new RabbitRpcServiceValidationException(Utils.getTimestamp(), serviceName,
                     ErrorStatusCode.BAD_REQUEST.getCode(),
                     errorMessage, bindingResult);
         }

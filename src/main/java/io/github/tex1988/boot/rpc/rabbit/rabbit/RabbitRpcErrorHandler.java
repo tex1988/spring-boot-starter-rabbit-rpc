@@ -112,34 +112,44 @@ public class RabbitRpcErrorHandler implements RabbitListenerErrorHandler {
     }
 
     private ErrorRabbitResponse resolveByMapping(Throwable exception) {
-        return new ErrorRabbitResponse(exception instanceof RabbitRpcServiceException ?
-                ((RabbitRpcServiceValidationException) exception).getTimestamp() :
-                System.currentTimeMillis(),
-                errorCodes.get(exception.getClass()).getCode(),
-                serviceName,
-                exception.getMessage(),
-                exception instanceof RabbitRpcServiceValidationException ?
-                        ((RabbitRpcServiceValidationException) exception).getBindingResult() :
-                        null);
+        ErrorRabbitResponse response = new ErrorRabbitResponse();
+        updateTimestamp(response, exception);
+        updateBindingResult(response, exception);
+        response.setMessage(exception.getMessage());
+        response.setStatusCode(errorCodes.get(exception.getClass()).getCode());
+        response.setServiceName(serviceName);
+        return response;
+    }
+
+    private void updateTimestamp(ErrorRabbitResponse response, Throwable exception) {
+        if (exception instanceof RabbitRpcServiceException e) {
+            response.setTimestamp(e.getTimestamp());
+        } else {
+            response.setTimestamp(Utils.getTimestamp());
+        }
+    }
+
+    private void updateBindingResult(ErrorRabbitResponse response, Throwable exception) {
+        if (exception instanceof RabbitRpcServiceValidationException e) {
+            response.setBindingResult(e.getBindingResult());
+        }
     }
 
     private ErrorRabbitResponse resolveByDefault(Throwable exception) {
-        if (exception instanceof RabbitRpcServiceValidationException) {
-            RabbitRpcServiceValidationException e = (RabbitRpcServiceValidationException) exception;
+        if (exception instanceof RabbitRpcServiceValidationException e) {
             return new ErrorRabbitResponse(e.getTimestamp(),
                     e.getStatusCode(),
                     e.getServiceName(),
                     e.getMessage(),
                     e.getBindingResult());
-        } else if (exception instanceof RabbitRpcServiceException) {
-            RabbitRpcServiceException e = (RabbitRpcServiceException) exception;
+        } else if (exception instanceof RabbitRpcServiceException e) {
             return new ErrorRabbitResponse(e.getTimestamp(),
                     e.getStatusCode(),
                     e.getServiceName(),
                     e.getMessage(),
                     null);
         } else {
-            return new ErrorRabbitResponse(System.currentTimeMillis(),
+            return new ErrorRabbitResponse(Utils.getTimestamp(),
                     ErrorStatusCode.INTERNAL_SERVER_ERROR.getCode(),
                     serviceName,
                     exception.getMessage(),

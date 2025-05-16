@@ -26,7 +26,7 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public class RabbitRpcServiceValidationException extends RabbitRpcServiceException {
 
-    private Map<String, String> bindingResult;
+    private final Map<String, String> bindingResult;
 
     /**
      * Constructs a new RabbitRpcServiceValidationException with detailed validation errors.
@@ -53,5 +53,6 @@ public class RabbitRpcServiceValidationException extends RabbitRpcServiceExcepti
      */
     public RabbitRpcServiceValidationException(Long timestamp, String serviceName, Integer statusCode, String message) {
         super(timestamp, serviceName, statusCode, message);
+        this.bindingResult = null;
     }
 }
