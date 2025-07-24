@@ -75,10 +75,9 @@ public class RabbitRpcValidator {
     }
 
     private String getFieldName(ConstraintViolation<Object> violation) {
-        String[] path = violation.getPropertyPath().toString().split("\\.");
-        String name = path[path.length - 1];
+        String name = violation.getPropertyPath().toString();
         if (violation.getRootBean() instanceof Proxy) {
-            name = violation.getInvalidValue().getClass().getSimpleName() + ":" + name;
+            name = name.split("\\.")[1];
         } else {
             name = violation.getRootBean().getClass().getSimpleName() + "." + name;
         }
