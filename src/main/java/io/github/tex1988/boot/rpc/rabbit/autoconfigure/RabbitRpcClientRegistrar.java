@@ -15,6 +15,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
+import org.springframework.lang.NonNull;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -28,7 +29,7 @@ public class RabbitRpcClientRegistrar implements ImportBeanDefinitionRegistrar {
     private static final String CLIENT_BEAN_NAME_SUFFIX = "Client";
 
     @Override
-    public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
+    public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, @NonNull BeanDefinitionRegistry registry) {
         Map<String, Object> attributes = importingClassMetadata.getAnnotationAttributes(EnableRabbitRpc.class.getName());
         if (attributes != null && (Boolean) attributes.get("enableClient")) {
             ClassPathScanningCandidateComponentProvider scanner = getScanner();
@@ -57,7 +58,7 @@ public class RabbitRpcClientRegistrar implements ImportBeanDefinitionRegistrar {
     private ClassPathScanningCandidateComponentProvider getScanner() {
         return new ClassPathScanningCandidateComponentProvider(false) {
             @Override
-            protected boolean isCandidateComponent(AnnotatedBeanDefinition beanDefinition) {
+            protected boolean isCandidateComponent(@NonNull AnnotatedBeanDefinition beanDefinition) {
                 return beanDefinition.getMetadata().isAbstract();
             }
         };

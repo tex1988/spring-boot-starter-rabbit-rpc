@@ -39,7 +39,6 @@ import org.springframework.boot.autoconfigure.amqp.SimpleRabbitListenerContainer
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory;
 import org.springframework.util.ClassUtils;
@@ -80,11 +79,6 @@ class RabbitRpcAutoConfigure {
     private MessageConverter messageConverter;
     private SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory;
     private RabbitListenerErrorHandler errorHandler;
-
-    @Bean
-    public RabbitRpcBeanExpressionResolver rabbitRpcBeanExpressionResolver() {
-        return expressionResolver;
-    }
 
     @PostConstruct
     public void init() {
