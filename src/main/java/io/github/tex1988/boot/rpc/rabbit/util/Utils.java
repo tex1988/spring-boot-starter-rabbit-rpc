@@ -8,6 +8,7 @@ import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.Map;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -20,10 +21,15 @@ public class Utils {
         return self.getClass().getClassLoader().loadClass(name);
     }
 
-    public static Map.Entry<Method, MethodHandle> getMethodEntry(Map<Class<?>, Map<Method, MethodHandle>> methodHandles, Class<?> clazz, String methodName) {
+    public static Map.Entry<Method, MethodHandle> getMethodEntry(Map<Class<?>, Map<Method, MethodHandle>> methodHandles,
+                                                                 Class<?> clazz, String methodName, Object[] args) {
+        Class<?>[] argTypes = Arrays.stream(args)
+                .map(Object::getClass)
+                .toArray(Class<?>[]::new);
         Map<Method, MethodHandle> iMethodHandles = methodHandles.get(clazz);
         return iMethodHandles.entrySet().stream()
                 .filter(e -> e.getKey().getName().equals(methodName))
+                .filter(e -> Arrays.equals(e.getKey().getParameterTypes(), argTypes))
                 .findAny()
                 .orElseThrow(() -> new IllegalStateException("Method: " + methodName + " not found"));
     }

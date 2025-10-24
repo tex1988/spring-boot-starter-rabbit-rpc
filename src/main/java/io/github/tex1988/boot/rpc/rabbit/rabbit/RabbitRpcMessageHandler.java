@@ -83,7 +83,7 @@ public class RabbitRpcMessageHandler {
         Class<?> iClazz = Utils.getClassByName(this, serviceName);
 
         // Find the target method by name
-        Map.Entry<Method, MethodHandle> methodEntry = Utils.getMethodEntry(methodHandles, iClazz, methodName);
+        Map.Entry<Method, MethodHandle> methodEntry = Utils.getMethodEntry(methodHandles, iClazz, methodName, args);
         Method method = methodEntry.getKey();
         MethodHandle methodHandle = methodEntry.getValue();
         Class<?> returnType = method.getReturnType();

@@ -87,7 +87,7 @@ public class RabbitRpcErrorHandler implements RabbitListenerErrorHandler {
                     className, methodName, exception);
         }
 
-        if (isReturn(className, methodName)) {
+        if (isReturn(className, methodName, message)) {
             return MessageBuilder.withPayload(response)
                     .setHeader(TYPE_ID_HEADER, ErrorRabbitResponse.class.getCanonicalName())
                     .build();
@@ -157,11 +157,16 @@ public class RabbitRpcErrorHandler implements RabbitListenerErrorHandler {
         }
     }
 
-    private boolean isReturn(String className, String methodName) {
-        Class<?> iClazz = Utils.getClassByName(this, className);
-        Map.Entry<Method, MethodHandle> methodEntry = Utils.getMethodEntry(methodHandles, iClazz, methodName);
-        Method method = methodEntry.getKey();
-        return !method.isAnnotationPresent(FireAndForget.class);
+    private boolean isReturn(String className, String methodName, org.springframework.messaging.Message<?> message) {
+        try {
+            Object[] args = (Object[]) message.getPayload();
+            Class<?> iClazz = Utils.getClassByName(this, className);
+            Map.Entry<Method, MethodHandle> methodEntry = Utils.getMethodEntry(methodHandles, iClazz, methodName, args);
+            Method method = methodEntry.getKey();
+            return !method.isAnnotationPresent(FireAndForget.class);
+        } catch (Exception e) {
+            return true;
+        }
     }
 
     private String getHeader(Message amqpMessage, String header) {
