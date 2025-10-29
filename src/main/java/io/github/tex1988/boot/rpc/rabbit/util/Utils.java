@@ -29,7 +29,16 @@ public class Utils {
         Map<Method, MethodHandle> iMethodHandles = methodHandles.get(clazz);
         return iMethodHandles.entrySet().stream()
                 .filter(e -> e.getKey().getName().equals(methodName))
-                .filter(e -> Arrays.equals(e.getKey().getParameterTypes(), argTypes))
+                .filter(e -> e.getKey().getParameterTypes().length == argTypes.length)
+                .filter(e -> {
+                    Class<?>[] paramTypes = e.getKey().getParameterTypes();
+                    for (int i = 0; i < paramTypes.length; i++) {
+                        if (!paramTypes[i].isAssignableFrom(argTypes[i])) {
+                            return false;
+                        }
+                    }
+                    return true;
+                })
                 .findAny()
                 .orElseThrow(() -> new IllegalStateException("Method: " + methodName + " not found"));
     }
