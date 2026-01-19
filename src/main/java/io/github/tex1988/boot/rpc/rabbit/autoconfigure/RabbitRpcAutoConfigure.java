@@ -271,7 +271,7 @@ class RabbitRpcAutoConfigure {
             ForyMessageConverter converter;
             List<Integer> concurrency = getConcurrency(annotation);
             if (concurrency.isEmpty()) {
-                converter = new ForyMessageConverter();
+                converter = new ForyMessageConverter(2);
             } else if (concurrency.size() == 1) {
                 converter = new ForyMessageConverter(concurrency.get(0));
             } else {
