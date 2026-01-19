@@ -4,7 +4,7 @@ import com.rabbitmq.client.Channel;
 import io.github.tex1988.boot.rpc.rabbit.annotation.EnableRabbitRpc;
 import io.github.tex1988.boot.rpc.rabbit.annotation.RabbitRpc;
 import io.github.tex1988.boot.rpc.rabbit.annotation.RabbitRpcInterface;
-import io.github.tex1988.boot.rpc.rabbit.converter.Kryo5MessageConverter;
+import io.github.tex1988.boot.rpc.rabbit.converter.ForyMessageConverter;
 import io.github.tex1988.boot.rpc.rabbit.model.RabbitRpcErrorMapping;
 import io.github.tex1988.boot.rpc.rabbit.rabbit.RabbitRpcBeanExpressionResolver;
 import io.github.tex1988.boot.rpc.rabbit.rabbit.RabbitRpcClientProxyFactory;
@@ -56,9 +56,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import static io.github.tex1988.boot.rpc.rabbit.constant.Constants.DEFAULT_ALLOWED_SERIALIZATION_PATTERNS;
 import static io.github.tex1988.boot.rpc.rabbit.constant.Constants.HANDLER_METHOD_NAME;
 import static io.github.tex1988.boot.rpc.rabbit.constant.Constants.RPC_RABBIT_TEMPLATE_BEAN_NAME;
 
@@ -270,15 +268,15 @@ class RabbitRpcAutoConfigure {
         if (converterBeanName != null && !converterBeanName.isBlank()) {
             return applicationContext.getBean(converterBeanName, MessageConverter.class);
         } else {
-            String[] allowedSerializationPatterns;
-            if (annotation.allowedSerializationPatterns() != null) {
-                allowedSerializationPatterns = annotation.allowedSerializationPatterns();
+            ForyMessageConverter converter;
+            List<Integer> concurrency = getConcurrency(annotation);
+            if (concurrency.isEmpty()) {
+                converter = new ForyMessageConverter();
+            } else if (concurrency.size() == 1) {
+                converter = new ForyMessageConverter(concurrency.get(0));
             } else {
-                allowedSerializationPatterns = new String[0];
+                converter = new ForyMessageConverter(concurrency.get(0), concurrency.get(1));
             }
-            Kryo5MessageConverter converter = new Kryo5MessageConverter();
-            converter.setAllowedListPatterns(Stream.concat(Arrays.stream(allowedSerializationPatterns),
-                    DEFAULT_ALLOWED_SERIALIZATION_PATTERNS.stream()).toList());
             return converter;
         }
     }

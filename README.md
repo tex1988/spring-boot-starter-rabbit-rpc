@@ -56,7 +56,7 @@ The `@FireAndForget` annotation can be used to mark a method as fire-and-forget.
 
 The `@EnableRabbitRpc` annotation must be used to enable the RPC server with property `enableServer = true`. 
 
-This library uses Kryo 5 serialization library for message serialization.
+This library uses Apache Fory serialization library for message serialization.
 
 `allowedSerializationPatterns` property must be provided to specify which packages are allowed for serialization.
 

@@ -14,9 +14,9 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * A utility class for validating method arguments and objects in Rabbit RPC services.
@@ -60,12 +60,15 @@ public class RabbitRpcValidator {
 
         // If there are validation errors, throw an exception
         if (!violations.isEmpty()) {
-            Map<String, String> bindingResult = new HashMap<>();
-            violations.forEach(violation -> {
-                String validationMessage = violation.getMessage();
-                String fieldName = getFieldName(violation);
-                bindingResult.put(fieldName, validationMessage);
-            });
+            Map<String, String> bindingResult = violations.stream()
+                    .collect(Collectors.groupingBy(
+                            this::getFieldName,
+                            Collectors.mapping(
+                                    ConstraintViolation::getMessage,
+                                    Collectors.joining("; ")
+                            )
+                    ));
+
             String errorMessage = "Validation failed for fields: " + String.join(", ",
                     bindingResult.keySet().stream().sorted().toList());
             throw new RabbitRpcServiceValidationException(Utils.getTimestamp(), serviceName,
