@@ -53,7 +53,7 @@ class RabbitRpcPreExistingRabbitInfrastructureTest {
     private static final String ROUTING_KEY = "test.preexisting.routing";
 
     @Container
-    private static final RabbitMQContainer rabbitMQContainer = new RabbitMQContainer("rabbitmq:4.0.8-management")
+    private static final RabbitMQContainer rabbitMQContainer = new RabbitMQContainer(AbstractRabbitRpcIntegrationTest.RABBITMQ_IMAGE)
             .withExposedPorts(5672, 15672);
 
     @DynamicPropertySource

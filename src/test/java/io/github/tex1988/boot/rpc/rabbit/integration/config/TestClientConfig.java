@@ -14,5 +14,5 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
         replyTimeout = 10000L
 )
 @SpringBootApplication(scanBasePackages = {"io.github.tex1988.boot.rpc.rabbit"})
-public class TestClientConfig {
+public class TestClientConfig extends BaseConfig {
 }

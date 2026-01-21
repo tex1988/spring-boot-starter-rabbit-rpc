@@ -1,5 +1,8 @@
 package io.github.tex1988.boot.rpc.rabbit.util;
 
+import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ClassInfo;
+import io.github.classgraph.ScanResult;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
@@ -10,7 +13,11 @@ import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
+
+import static io.github.tex1988.boot.rpc.rabbit.constant.Constants.DEFAULT_ALLOWED_SERIALIZATION_PATTERNS;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class Utils {
@@ -35,6 +42,18 @@ public class Utils {
                 .orElseThrow(() -> new IllegalStateException("Method: " + methodName + " not found"));
     }
 
+    public static List<String> getAllowedClassesNames(String[] patterns) {
+        if (patterns != null) {
+            patterns = Stream.concat(Arrays.stream(patterns), DEFAULT_ALLOWED_SERIALIZATION_PATTERNS.stream())
+                    .toArray(String[]::new);
+        } else {
+            patterns = DEFAULT_ALLOWED_SERIALIZATION_PATTERNS.toArray(String[]::new);
+        }
+        return Arrays.stream(patterns).map(Utils::scanClasses)
+                .flatMap(List::stream)
+                .toList();
+    }
+
     public static Long getTimestamp() {
         return LocalDateTime.now()
                 .atZone(ZONE_ID)
@@ -56,5 +75,21 @@ public class Utils {
             }
         }
         return true;
+    }
+
+    private static List<String> scanClasses(String basePackage) {
+        if (!basePackage.endsWith(".*")) {
+            return List.of(basePackage);
+        }
+        basePackage = basePackage.substring(0, basePackage.length() - 2);
+        try (ScanResult scanResult = new ClassGraph()
+                .acceptPackages(basePackage)
+                .enableSystemJarsAndModules()
+                .scan()) {
+            return scanResult.getAllStandardClasses()
+                    .stream()
+                    .map(ClassInfo::getName)
+                    .toList();
+        }
     }
 }

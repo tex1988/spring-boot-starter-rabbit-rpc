@@ -48,8 +48,10 @@ class RabbitRpcValidationIntegrationTest extends AbstractRabbitRpcIntegrationTes
                 .hasMessageContaining("Validation failed for fields: id")
                 .satisfies(ex -> {
                     RabbitRpcServiceValidationException valEx = (RabbitRpcServiceValidationException) ex;
-                    assertThat(valEx.getBindingResult()).containsKey("id");
-                    assertThat(valEx.getStatusCode()).isEqualTo(400);
+                    assertThat(valEx.getBindingResult())
+                            .containsKey("id");
+                    assertThat(valEx.getStatusCode())
+                            .isEqualTo(400);
                 });
     }
 
@@ -62,8 +64,10 @@ class RabbitRpcValidationIntegrationTest extends AbstractRabbitRpcIntegrationTes
                 .hasMessageContaining("Validation failed for fields: id")
                 .satisfies(ex -> {
                     RabbitRpcServiceValidationException valEx = (RabbitRpcServiceValidationException) ex;
-                    assertThat(valEx.getBindingResult()).containsKey("id");
-                    assertThat(valEx.getStatusCode()).isEqualTo(400);
+                    assertThat(valEx.getBindingResult())
+                            .containsKey("id");
+                    assertThat(valEx.getStatusCode())
+                            .isEqualTo(400);
                 });
     }
 
@@ -76,8 +80,10 @@ class RabbitRpcValidationIntegrationTest extends AbstractRabbitRpcIntegrationTes
                 .hasMessageContaining("Validation failed for fields: id")
                 .satisfies(ex -> {
                     RabbitRpcServiceValidationException valEx = (RabbitRpcServiceValidationException) ex;
-                    assertThat(valEx.getBindingResult()).containsKey("id");
-                    assertThat(valEx.getStatusCode()).isEqualTo(400);
+                    assertThat(valEx.getBindingResult())
+                            .containsKey("id");
+                    assertThat(valEx.getStatusCode())
+                            .isEqualTo(400);
                 });
     }
 
@@ -106,9 +112,12 @@ class RabbitRpcValidationIntegrationTest extends AbstractRabbitRpcIntegrationTes
                 .hasMessageContaining("Validation failed for fields: TestUser.id")
                 .satisfies(ex -> {
                     RabbitRpcServiceValidationException valEx = (RabbitRpcServiceValidationException) ex;
-                    assertThat(valEx.getBindingResult()).containsKey("TestUser.id");
-                    assertThat(valEx.getBindingResult().get("TestUser.id")).contains("ID cannot be null");
-                    assertThat(valEx.getStatusCode()).isEqualTo(400);
+                    assertThat(valEx.getBindingResult())
+                            .containsKey("TestUser.id");
+                    assertThat(valEx.getBindingResult().get("TestUser.id"))
+                            .contains("ID cannot be null");
+                    assertThat(valEx.getStatusCode())
+                            .isEqualTo(400);
                 });
     }
 
@@ -124,12 +133,13 @@ class RabbitRpcValidationIntegrationTest extends AbstractRabbitRpcIntegrationTes
                 .hasMessageContaining("Validation failed for fields: TestUser.name")
                 .satisfies(ex -> {
                     RabbitRpcServiceValidationException valEx = (RabbitRpcServiceValidationException) ex;
-                    assertThat(valEx.getBindingResult()).containsKey("TestUser.name");
+                    assertThat(valEx.getBindingResult())
+                            .containsKey("TestUser.name");
                     // Blank string violates both @NotBlank and @Size(min=2)
                     String message = valEx.getBindingResult().get("TestUser.name");
-                    assertThat(message).contains("Name cannot be blank");
-                    assertThat(message).contains("Name must be between 2 and 50 characters");
-                    assertThat(valEx.getStatusCode()).isEqualTo(400);
+                    assertThat(message)
+                            .contains("Name cannot be blank")
+                            .contains("Name must be between 2 and 50 characters");
                 });
     }
 
@@ -327,4 +337,3 @@ class RabbitRpcValidationIntegrationTest extends AbstractRabbitRpcIntegrationTes
         assertDoesNotThrow(() -> iTestUserServiceClient.notifyUser(null, "test message"));
     }
 }
-

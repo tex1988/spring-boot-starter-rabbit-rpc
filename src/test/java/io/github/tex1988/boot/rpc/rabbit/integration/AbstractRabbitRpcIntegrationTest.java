@@ -18,7 +18,7 @@ import java.time.Duration;
 @Testcontainers
 public abstract class AbstractRabbitRpcIntegrationTest {
 
-    private static final String RABBITMQ_IMAGE = "rabbitmq:4.2";
+    public static final String RABBITMQ_IMAGE = "rabbitmq:4.2";
 
     @Getter
     @Container

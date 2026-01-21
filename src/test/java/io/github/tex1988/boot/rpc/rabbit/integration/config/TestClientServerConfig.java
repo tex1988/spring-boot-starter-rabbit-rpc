@@ -13,12 +13,13 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
         enableServer = true,
         scanBasePackages = {"io.github.tex1988.boot.rpc.rabbit.integration.service"},
         allowedSerializationPatterns = {
-                "io.github.tex1988.boot.rpc.rabbit.integration.model.*"
+                "io.github.tex1988.boot.rpc.rabbit.integration.model.*",
+                "io.github.tex1988.boot.rpc.rabbit.integration.explicit.ExplicitlyRegisteredClass"  // Explicit full name
         },
         replyTimeout = 10000L,
         concurrency = "3-5"
 )
 @SpringBootApplication(scanBasePackages = {"io.github.tex1988.boot.rpc.rabbit"})
-public class TestClientServerConfig {
+public class TestClientServerConfig extends BaseConfig {
 }
 

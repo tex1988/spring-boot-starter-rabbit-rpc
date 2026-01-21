@@ -14,7 +14,6 @@ public class Constants {
 
     public static final String HANDLER_METHOD_NAME = "handleMessage";
     public static final String RPC_RABBIT_TEMPLATE_BEAN_NAME = "rabbitRpcRabbitTemplate";
-    public static final List<String> DEFAULT_ALLOWED_SERIALIZATION_PATTERNS = List.of("java.lang.*",
-            "java.util.*",
+    public static final List<String> DEFAULT_ALLOWED_SERIALIZATION_PATTERNS = List.of(
             "io.github.tex1988.boot.rpc.rabbit.model.*");
 }

@@ -51,6 +51,7 @@
     <properties>
         <java.version>17</java.version>
         <apache.fory.version>0.14.1</apache.fory.version>
+        <classgraph.version>4.8.184</classgraph.version>
         <testcontainers.version>1.20.4</testcontainers.version>
     </properties>
     <dependencyManagement>
@@ -89,6 +90,11 @@
             <groupId>org.apache.fory</groupId>
             <artifactId>fory-core</artifactId>
             <version>${apache.fory.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.classgraph</groupId>
+            <artifactId>classgraph</artifactId>
+            <version>${classgraph.version}</version>
         </dependency>
         <!-- Test dependencies -->
         <dependency>

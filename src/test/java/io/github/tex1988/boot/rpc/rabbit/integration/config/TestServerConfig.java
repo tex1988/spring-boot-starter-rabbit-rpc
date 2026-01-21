@@ -14,5 +14,5 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
         concurrency = "3-5"
 )
 @SpringBootApplication(scanBasePackages = {"io.github.tex1988.boot.rpc.rabbit"})
-public class TestServerConfig {
+public class TestServerConfig extends BaseConfig {
 }

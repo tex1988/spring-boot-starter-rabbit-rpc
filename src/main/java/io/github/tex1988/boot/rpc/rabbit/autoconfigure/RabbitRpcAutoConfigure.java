@@ -10,6 +10,7 @@ import io.github.tex1988.boot.rpc.rabbit.rabbit.RabbitRpcBeanExpressionResolver;
 import io.github.tex1988.boot.rpc.rabbit.rabbit.RabbitRpcClientProxyFactory;
 import io.github.tex1988.boot.rpc.rabbit.rabbit.RabbitRpcErrorHandler;
 import io.github.tex1988.boot.rpc.rabbit.rabbit.RabbitRpcMessageHandler;
+import io.github.tex1988.boot.rpc.rabbit.util.Utils;
 import io.github.tex1988.boot.rpc.rabbit.validator.RabbitRpcValidator;
 import jakarta.annotation.PostConstruct;
 import jakarta.validation.Validator;
@@ -268,14 +269,16 @@ class RabbitRpcAutoConfigure {
         if (converterBeanName != null && !converterBeanName.isBlank()) {
             return applicationContext.getBean(converterBeanName, MessageConverter.class);
         } else {
+            String[] patterns = annotation.allowedSerializationPatterns();
+            List<String> allowedSerializationClasses = Utils.getAllowedClassesNames(patterns);
             ForyMessageConverter converter;
             List<Integer> concurrency = getConcurrency(annotation);
             if (concurrency.isEmpty()) {
-                converter = new ForyMessageConverter(2);
+                converter = new ForyMessageConverter(2, allowedSerializationClasses);
             } else if (concurrency.size() == 1) {
-                converter = new ForyMessageConverter(concurrency.get(0));
+                converter = new ForyMessageConverter(concurrency.get(0), allowedSerializationClasses);
             } else {
-                converter = new ForyMessageConverter(concurrency.get(0), concurrency.get(1));
+                converter = new ForyMessageConverter(concurrency.get(0), concurrency.get(1), allowedSerializationClasses);
             }
             return converter;
         }

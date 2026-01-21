@@ -16,5 +16,5 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
         concurrency = "2-3"  // Different from other tests to verify it's a separate context
 )
 @SpringBootApplication(scanBasePackages = {"io.github.tex1988.boot.rpc.rabbit"})
-public class TestPreExistingInfraConfig {
+public class TestPreExistingInfraConfig extends BaseConfig {
 }

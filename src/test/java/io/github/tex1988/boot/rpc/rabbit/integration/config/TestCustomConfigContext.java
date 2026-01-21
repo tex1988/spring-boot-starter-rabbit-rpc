@@ -3,10 +3,13 @@ package io.github.tex1988.boot.rpc.rabbit.integration.config;
 import io.github.tex1988.boot.rpc.rabbit.annotation.EnableRabbitRpc;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Profile;
 
 /**
  * Test configuration with custom executor, message converter, and error handler.
+ * Uses 'custom-config' profile to isolate custom beans from other test contexts.
  */
+@Profile("custom-config")
 @EnableRabbitRpc(
         enableClient = true,
         enableServer = true,
@@ -19,7 +22,7 @@ import org.springframework.context.annotation.Bean;
         errorHandler = "customErrorHandler"        // ← Custom error handler
 )
 @SpringBootApplication(scanBasePackages = {"io.github.tex1988.boot.rpc.rabbit"})
-public class TestCustomConfigContext {
+public class TestCustomConfigContext extends BaseConfig {
 
     /**
      * Custom task executor bean.

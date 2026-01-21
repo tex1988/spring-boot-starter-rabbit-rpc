@@ -79,7 +79,7 @@ class RabbitRpcNonExistingRabbitInfrastructureTest extends AbstractRabbitRpcInte
         // Then - Infrastructure created
         assertThat(exchangeExists).as("Exchange should exist").isTrue();
         assertThat(queueProps).as("Queue should exist").isNotNull()
-                        .containsEntry(RabbitAdmin.QUEUE_NAME, queueName);
+                .containsEntry(RabbitAdmin.QUEUE_NAME, queueName);
         assertThat(consumerCount).as("Should have active consumers").isGreaterThan(0);
 
         // And - End-to-end RPC works

@@ -33,11 +33,11 @@ public class ForyMessageConverter extends AbstractMessageConverter {
         this(FORY_MIN_PULL_SIZE, FORY_MAX_PULL_SIZE, null);
     }
 
-    public ForyMessageConverter(List<Class<?>> allowedListClasses) {
+    public ForyMessageConverter(List<String> allowedListClasses) {
         this(FORY_MIN_PULL_SIZE, FORY_MAX_PULL_SIZE, allowedListClasses);
     }
 
-    public ForyMessageConverter(int poolSize, List<Class<?>> allowedListClasses) {
+    public ForyMessageConverter(int poolSize, List<String> allowedListClasses) {
         this(poolSize, poolSize, allowedListClasses);
     }
 
@@ -49,7 +49,7 @@ public class ForyMessageConverter extends AbstractMessageConverter {
         this(minPoolSize, maxPoolSize, null);
     }
 
-    public ForyMessageConverter(int minPoolSize, int maxPoolSize, List<Class<?>> allowedListClasses) {
+    public ForyMessageConverter(int minPoolSize, int maxPoolSize, List<String> allowedListClasses) {
         ForyBuilder builder = Fory.builder()
                 .withLanguage(Language.JAVA)
                 .withRefTracking(true)
@@ -58,8 +58,8 @@ public class ForyMessageConverter extends AbstractMessageConverter {
         builder.requireClassRegistration(isRegistrationRequired);
         fory = builder.buildThreadSafeForyPool(minPoolSize, maxPoolSize);
         if (isRegistrationRequired) {
-            for (Class<?> clazz : allowedListClasses) {
-                fory.register(clazz);
+            for (String className : allowedListClasses) {
+                fory.register(className);
             }
         }
     }
