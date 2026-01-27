@@ -85,6 +85,7 @@ public class Utils {
         try (ScanResult scanResult = new ClassGraph()
                 .acceptPackages(basePackage)
                 .enableSystemJarsAndModules()
+                .ignoreClassVisibility()
                 .scan()) {
             return scanResult.getAllStandardClasses()
                     .stream()

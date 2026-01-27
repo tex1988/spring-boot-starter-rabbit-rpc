@@ -5,11 +5,9 @@ import io.github.tex1988.boot.rpc.rabbit.util.Utils;
 import lombok.AllArgsConstructor;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.ApplicationContext;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-@Component
 @AllArgsConstructor
 public class ConverterFactory {
 

@@ -5,13 +5,11 @@ import io.github.tex1988.boot.rpc.rabbit.annotation.EnableRabbitRpc;
 import io.github.tex1988.boot.rpc.rabbit.annotation.RabbitRpc;
 import io.github.tex1988.boot.rpc.rabbit.annotation.RabbitRpcInterface;
 import io.github.tex1988.boot.rpc.rabbit.converter.ConverterFactory;
-import io.github.tex1988.boot.rpc.rabbit.converter.ForyMessageConverter;
 import io.github.tex1988.boot.rpc.rabbit.model.RabbitRpcErrorMapping;
 import io.github.tex1988.boot.rpc.rabbit.rabbit.RabbitRpcBeanExpressionResolver;
 import io.github.tex1988.boot.rpc.rabbit.rabbit.RabbitRpcClientProxyFactory;
 import io.github.tex1988.boot.rpc.rabbit.rabbit.RabbitRpcErrorHandler;
 import io.github.tex1988.boot.rpc.rabbit.rabbit.RabbitRpcMessageHandler;
-import io.github.tex1988.boot.rpc.rabbit.util.Utils;
 import io.github.tex1988.boot.rpc.rabbit.validator.RabbitRpcValidator;
 import jakarta.annotation.PostConstruct;
 import jakarta.validation.Validator;
@@ -70,7 +68,6 @@ class RabbitRpcAutoConfigure {
     private final ApplicationContext applicationContext;
     private final ConnectionFactory connectionFactory;
     private final SimpleRabbitListenerContainerFactoryConfigurer configurer;
-    private final ConverterFactory converterFactory;
     private final DefaultMessageHandlerMethodFactory messageHandlerMethodFactory = new DefaultMessageHandlerMethodFactory();
     private final AmqpAdmin amqpAdmin;
     private final Validator validator;
@@ -97,6 +94,7 @@ class RabbitRpcAutoConfigure {
     }
 
     private void initRabbitTemplate(EnableRabbitRpc annotation) {
+        ConverterFactory converterFactory = new ConverterFactory(applicationContext, expressionResolver);
         messageConverter = converterFactory
                 .getConverter(annotation.messageConverter(), annotation.allowedSerializationPatterns(), concurrency);
         ConfigurableListableBeanFactory beanFactory = ((ConfigurableApplicationContext) applicationContext).getBeanFactory();
