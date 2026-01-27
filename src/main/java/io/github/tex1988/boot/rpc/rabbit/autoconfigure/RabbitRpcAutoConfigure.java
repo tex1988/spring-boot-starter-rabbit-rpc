@@ -4,6 +4,7 @@ import com.rabbitmq.client.Channel;
 import io.github.tex1988.boot.rpc.rabbit.annotation.EnableRabbitRpc;
 import io.github.tex1988.boot.rpc.rabbit.annotation.RabbitRpc;
 import io.github.tex1988.boot.rpc.rabbit.annotation.RabbitRpcInterface;
+import io.github.tex1988.boot.rpc.rabbit.converter.ConverterFactory;
 import io.github.tex1988.boot.rpc.rabbit.converter.ForyMessageConverter;
 import io.github.tex1988.boot.rpc.rabbit.model.RabbitRpcErrorMapping;
 import io.github.tex1988.boot.rpc.rabbit.rabbit.RabbitRpcBeanExpressionResolver;
@@ -69,12 +70,14 @@ class RabbitRpcAutoConfigure {
     private final ApplicationContext applicationContext;
     private final ConnectionFactory connectionFactory;
     private final SimpleRabbitListenerContainerFactoryConfigurer configurer;
+    private final ConverterFactory converterFactory;
     private final DefaultMessageHandlerMethodFactory messageHandlerMethodFactory = new DefaultMessageHandlerMethodFactory();
     private final AmqpAdmin amqpAdmin;
     private final Validator validator;
     private final Map<Class<?>, Map<Method, MethodHandle>> methodHandles = new ConcurrentHashMap<>();
     private final RabbitRpcBeanExpressionResolver expressionResolver;
 
+    private List<Integer> concurrency;
     private MessageConverter messageConverter;
     private SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory;
     private RabbitListenerErrorHandler errorHandler;
@@ -82,25 +85,20 @@ class RabbitRpcAutoConfigure {
     @PostConstruct
     public void init() {
         EnableRabbitRpc annotation = getEnableRabbitRpc();
-        if (annotation != null && (annotation.enableClient() || annotation.enableServer())) {
-            messageConverter = getRpcMessageConverter(annotation);
-            initRabbitTemplate(annotation);
-        }
-        if (annotation != null && annotation.enableServer()) {
-
-            List<Object> beanList = applicationContext
-                    .getBeansWithAnnotation(RabbitRpc.class).values().stream().toList();
-            if (!beanList.isEmpty()) {
-                ((RabbitAdmin) amqpAdmin).setRedeclareManualDeclarations(true);
-                initRabbitListenerContainerFactory(annotation);
-                createMethodHandles(beanList);
-                errorHandler = getErrorHandler(annotation, methodHandles);
-                initServers(beanList);
+        if (annotation != null) {
+            concurrency = getConcurrency(annotation);
+            if (annotation.enableClient() || annotation.enableServer()) {
+                initRabbitTemplate(annotation);
+            }
+            if (annotation.enableServer()) {
+                initServer(annotation);
             }
         }
     }
 
     private void initRabbitTemplate(EnableRabbitRpc annotation) {
+        messageConverter = converterFactory
+                .getConverter(annotation.messageConverter(), annotation.allowedSerializationPatterns(), concurrency);
         ConfigurableListableBeanFactory beanFactory = ((ConfigurableApplicationContext) applicationContext).getBeanFactory();
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
         rabbitTemplate.setMessageConverter(messageConverter);
@@ -108,6 +106,18 @@ class RabbitRpcAutoConfigure {
         beanFactory.registerSingleton(RPC_RABBIT_TEMPLATE_BEAN_NAME, rabbitTemplate);
         beanFactory.getBeansOfType(RabbitRpcClientProxyFactory.class).forEach((name, factory) ->
                 factory.setMessageTtl(String.valueOf(annotation.replyTimeout())));
+    }
+
+    private void initServer(EnableRabbitRpc annotation) {
+        List<Object> beanList = applicationContext
+                .getBeansWithAnnotation(RabbitRpc.class).values().stream().toList();
+        if (!beanList.isEmpty()) {
+            ((RabbitAdmin) amqpAdmin).setRedeclareManualDeclarations(true);
+            initRabbitListenerContainerFactory(annotation);
+            createMethodHandles(beanList);
+            errorHandler = getErrorHandler(annotation, methodHandles);
+            initServers(beanList);
+        }
     }
 
     private void initRabbitListenerContainerFactory(EnableRabbitRpc annotation) {
@@ -119,7 +129,6 @@ class RabbitRpcAutoConfigure {
         rabbitListenerContainerFactory.setDefaultRequeueRejected(true);
         rabbitListenerContainerFactory.setApplicationEventPublisher(applicationContext);
         rabbitListenerContainerFactory.setApplicationContext(applicationContext);
-        List<Integer> concurrency = getConcurrency(annotation);
         if (!concurrency.isEmpty()) {
             rabbitListenerContainerFactory.setConcurrentConsumers(concurrency.get(0));
             if (concurrency.size() > 1) {
@@ -264,26 +273,6 @@ class RabbitRpcAutoConfigure {
         }
     }
 
-    private MessageConverter getRpcMessageConverter(EnableRabbitRpc annotation) {
-        String converterBeanName = expressionResolver.resolveValue(annotation.messageConverter());
-        if (converterBeanName != null && !converterBeanName.isBlank()) {
-            return applicationContext.getBean(converterBeanName, MessageConverter.class);
-        } else {
-            String[] patterns = annotation.allowedSerializationPatterns();
-            List<String> allowedSerializationClasses = Utils.getAllowedClassesNames(patterns);
-            ForyMessageConverter converter;
-            List<Integer> concurrency = getConcurrency(annotation);
-            if (concurrency.isEmpty()) {
-                converter = new ForyMessageConverter(2, allowedSerializationClasses);
-            } else if (concurrency.size() == 1) {
-                converter = new ForyMessageConverter(concurrency.get(0), allowedSerializationClasses);
-            } else {
-                converter = new ForyMessageConverter(concurrency.get(0), concurrency.get(1), allowedSerializationClasses);
-            }
-            return converter;
-        }
-    }
-
     private Executor getTaskExecutor(EnableRabbitRpc annotation) {
         String executorBeanName = expressionResolver.resolveValue(annotation.executor());
         if (executorBeanName != null && !executorBeanName.isBlank()) {
@@ -304,9 +293,9 @@ class RabbitRpcAutoConfigure {
     }
 
     private List<Integer> getConcurrency(EnableRabbitRpc annotation) {
-        String concurrency = expressionResolver.resolveValue(annotation.concurrency());
-        if (concurrency != null && !concurrency.isBlank()) {
-            return Arrays.stream(concurrency.split("-")).map(Integer::parseInt).toList();
+        String value = expressionResolver.resolveValue(annotation.concurrency());
+        if (value != null && !value.isBlank()) {
+            return Arrays.stream(value.split("-")).map(Integer::parseInt).toList();
         } else {
             return Collections.emptyList();
         }
