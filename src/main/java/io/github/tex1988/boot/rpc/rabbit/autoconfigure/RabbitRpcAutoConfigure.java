@@ -62,7 +62,7 @@ import static io.github.tex1988.boot.rpc.rabbit.constant.Constants.RPC_RABBIT_TE
 
 @Configuration
 @RequiredArgsConstructor
-@ConditionalOnClass(EnableRabbitRpc.class)
+@ConditionalOnClass({EnableRabbitRpc.class, ConnectionFactory.class})
 class RabbitRpcAutoConfigure {
 
     private final ApplicationContext applicationContext;
