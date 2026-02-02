@@ -2,6 +2,7 @@ package io.github.tex1988.boot.rpc.rabbit.converter;
 
 import org.apache.fory.Fory;
 import org.apache.fory.ThreadSafeFory;
+import org.apache.fory.config.CompatibleMode;
 import org.apache.fory.config.ForyBuilder;
 import org.apache.fory.config.Language;
 import org.springframework.amqp.core.Message;
@@ -53,6 +54,7 @@ public class ForyMessageConverter extends AbstractMessageConverter {
         ForyBuilder builder = Fory.builder()
                 .withLanguage(Language.JAVA)
                 .withRefTracking(true)
+                .withCompatibleMode(CompatibleMode.COMPATIBLE)
                 .withAsyncCompilation(true);
         boolean isRegistrationRequired = allowedListClasses != null && !allowedListClasses.isEmpty();
         builder.requireClassRegistration(isRegistrationRequired);
