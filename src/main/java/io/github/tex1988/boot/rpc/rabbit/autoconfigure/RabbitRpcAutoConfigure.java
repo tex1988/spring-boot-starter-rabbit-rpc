@@ -58,7 +58,6 @@ import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
 import static io.github.tex1988.boot.rpc.rabbit.constant.Constants.HANDLER_METHOD_NAME;
-import static io.github.tex1988.boot.rpc.rabbit.constant.Constants.RPC_RABBIT_TEMPLATE_BEAN_NAME;
 
 @Configuration
 @RequiredArgsConstructor
@@ -101,9 +100,11 @@ class RabbitRpcAutoConfigure {
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
         rabbitTemplate.setMessageConverter(messageConverter);
         rabbitTemplate.setReplyTimeout(annotation.replyTimeout());
-        beanFactory.registerSingleton(RPC_RABBIT_TEMPLATE_BEAN_NAME, rabbitTemplate);
         beanFactory.getBeansOfType(RabbitRpcClientProxyFactory.class).forEach((name, factory) ->
-                factory.setMessageTtl(String.valueOf(annotation.replyTimeout())));
+        {
+            factory.setRabbitTemplate(rabbitTemplate);
+            factory.setMessageTtl(String.valueOf(annotation.replyTimeout()));
+        });
     }
 
     private void initServer(EnableRabbitRpc annotation) {

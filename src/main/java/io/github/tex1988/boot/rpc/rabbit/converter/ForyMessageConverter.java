@@ -1,10 +1,12 @@
 package io.github.tex1988.boot.rpc.rabbit.converter;
 
+import lombok.SneakyThrows;
 import org.apache.fory.Fory;
 import org.apache.fory.ThreadSafeFory;
 import org.apache.fory.config.CompatibleMode;
 import org.apache.fory.config.ForyBuilder;
 import org.apache.fory.config.Language;
+import org.apache.fory.logging.LoggerFactory;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.support.converter.AbstractMessageConverter;
@@ -30,6 +32,11 @@ public class ForyMessageConverter extends AbstractMessageConverter {
 
     private final ThreadSafeFory fory;
 
+    static {
+        LoggerFactory.useSlf4jLogging(true);
+        LoggerFactory.setLogLevel(0);
+    }
+
     public ForyMessageConverter() {
         this(FORY_MIN_PULL_SIZE, FORY_MAX_PULL_SIZE, null);
     }
@@ -50,6 +57,7 @@ public class ForyMessageConverter extends AbstractMessageConverter {
         this(minPoolSize, maxPoolSize, null);
     }
 
+    @SneakyThrows
     public ForyMessageConverter(int minPoolSize, int maxPoolSize, List<String> allowedListClasses) {
         ForyBuilder builder = Fory.builder()
                 .withLanguage(Language.JAVA)
@@ -61,7 +69,8 @@ public class ForyMessageConverter extends AbstractMessageConverter {
         fory = builder.buildThreadSafeForyPool(minPoolSize, maxPoolSize);
         if (isRegistrationRequired) {
             for (String className : allowedListClasses) {
-                fory.register(className);
+                Class<?> clazz = Class.forName(className);
+                fory.register(clazz, className);
             }
         }
     }

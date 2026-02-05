@@ -12,7 +12,7 @@ import java.util.List;
 public class ConverterFactory {
 
     private static final Integer DEFAULT_MIN_POOL_SIZE = 2;
-    private static final Integer DEFAULT_MAX_POOL_SIZE = 200;
+    private static final Integer DEFAULT_MAX_POOL_SIZE = 100;
 
     private final ApplicationContext applicationContext;
     private final RabbitRpcBeanExpressionResolver expressionResolver;
@@ -33,15 +33,17 @@ public class ConverterFactory {
         if (concurrency.isEmpty()) {
             return DEFAULT_MIN_POOL_SIZE;
         } else {
-            return concurrency.get(0);
+            //Rounding to the nearest integer value
+            return (concurrency.get(0) + 1) / 2;
         }
     }
 
     private Integer getMaxPoolSize(List<Integer> concurrency) {
         if (concurrency.size() < 2) {
             return DEFAULT_MAX_POOL_SIZE;
-        } else if (concurrency.get(1) > 200) {
-            return concurrency.get(1);
+        } else if (concurrency.get(1) / 2 > DEFAULT_MAX_POOL_SIZE) {
+            //Rounding to the nearest integer value
+            return (concurrency.get(1) + 1) / 2;
         } else {
             return DEFAULT_MAX_POOL_SIZE;
         }

@@ -14,7 +14,6 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
 
 import java.lang.reflect.InvocationHandler;
@@ -22,8 +21,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
 import static io.github.tex1988.boot.rpc.rabbit.constant.Constants.METHOD_HEADER;
-import static io.github.tex1988.boot.rpc.rabbit.constant.Constants.RPC_RABBIT_TEMPLATE_BEAN_NAME;
 import static io.github.tex1988.boot.rpc.rabbit.constant.Constants.SERVICE_HEADER;
+import static org.hibernate.validator.internal.util.Contracts.assertNotNull;
 
 public class RabbitRpcClientProxyFactory<T> implements FactoryBean<T> {
 
@@ -32,11 +31,13 @@ public class RabbitRpcClientProxyFactory<T> implements FactoryBean<T> {
     private static final Method TO_STRING;
 
     private final Class<T> interfaceType;
-    private final RabbitTemplate rabbitTemplate;
+
     private final RabbitRpcBeanExpressionResolver expressionResolver;
     private final RabbitRpcInterface annotation;
     private final String serviceName;
 
+    @Setter
+    private RabbitTemplate rabbitTemplate;
     @Setter
     private String messageTtl;
     private String exchange;
@@ -54,11 +55,8 @@ public class RabbitRpcClientProxyFactory<T> implements FactoryBean<T> {
     }
 
     @Autowired
-    public RabbitRpcClientProxyFactory(Class<T> interfaceType,
-                                       @Lazy @Qualifier(RPC_RABBIT_TEMPLATE_BEAN_NAME) RabbitTemplate rabbitTemplate,
-                                       @Lazy RabbitRpcBeanExpressionResolver expressionResolver) {
+    public RabbitRpcClientProxyFactory(Class<T> interfaceType, @Lazy RabbitRpcBeanExpressionResolver expressionResolver) {
         this.interfaceType = interfaceType;
-        this.rabbitTemplate = rabbitTemplate;
         this.annotation = interfaceType.getAnnotation(RabbitRpcInterface.class);
         this.expressionResolver = expressionResolver;
         this.serviceName = interfaceType.getSimpleName();
@@ -89,6 +87,8 @@ public class RabbitRpcClientProxyFactory<T> implements FactoryBean<T> {
             if (args == null) {
                 args = new Object[0];
             }
+
+            assertNotNull(rabbitTemplate, "RabbitTemplate is not set in RabbitRpcClientProxyFactory");
 
             if (method.isAnnotationPresent(FireAndForget.class)) {
                 rabbitTemplate.convertAndSend(exchange, routing, args, postProcessor);
