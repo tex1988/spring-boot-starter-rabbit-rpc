@@ -6,6 +6,7 @@ import org.apache.fory.ThreadSafeFory;
 import org.apache.fory.config.CompatibleMode;
 import org.apache.fory.config.ForyBuilder;
 import org.apache.fory.config.Language;
+import org.apache.fory.config.UnknownEnumValueStrategy;
 import org.apache.fory.logging.LoggerFactory;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
@@ -63,6 +64,7 @@ public class ForyMessageConverter extends AbstractMessageConverter {
                 .withLanguage(Language.JAVA)
                 .withRefTracking(true)
                 .withCompatibleMode(CompatibleMode.COMPATIBLE)
+                .withUnknownEnumValueStrategy(UnknownEnumValueStrategy.RETURN_NULL)
                 .withAsyncCompilation(true);
         boolean isRegistrationRequired = allowedListClasses != null && !allowedListClasses.isEmpty();
         builder.requireClassRegistration(isRegistrationRequired);
