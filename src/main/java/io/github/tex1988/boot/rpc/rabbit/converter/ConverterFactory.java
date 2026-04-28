@@ -11,41 +11,35 @@ import java.util.List;
 @AllArgsConstructor
 public class ConverterFactory {
 
-    private static final Integer DEFAULT_MIN_POOL_SIZE = 2;
-    private static final Integer DEFAULT_MAX_POOL_SIZE = 100;
+    private static final Integer DEFAULT_POOL_SIZE = 4;
 
     private final ApplicationContext applicationContext;
     private final RabbitRpcBeanExpressionResolver expressionResolver;
 
-    public MessageConverter getConverter(String beanExpression, String[] patterns, List<Integer> concurrency) {
+    public MessageConverter getConverter(String beanExpression, String[] patterns, List<Integer> concurrency, int poolSize) {
         String converterBeanName = expressionResolver.resolveValue(beanExpression);
         if (converterBeanName != null && !converterBeanName.isBlank()) {
             return applicationContext.getBean(converterBeanName, MessageConverter.class);
         } else {
             List<String> allowedSerializationClasses = Utils.getAllowedClassesNames(patterns);
-            Integer minPoolSize = getMinPoolSize(concurrency);
-            Integer maxPoolSize = getMaxPoolSize(concurrency);
-            return new ForyMessageConverter(minPoolSize, maxPoolSize, allowedSerializationClasses);
+            int actualPoolSize = poolSize == 0 ? getPoolSize(concurrency) : poolSize;
+            return new ForyMessageConverter(actualPoolSize, allowedSerializationClasses);
         }
     }
 
-    private Integer getMinPoolSize(List<Integer> concurrency) {
-        if (concurrency.isEmpty()) {
-            return DEFAULT_MIN_POOL_SIZE;
-        } else {
-            //Rounding to the nearest integer value
-            return (concurrency.get(0) + 1) / 2;
+    private static Integer getPoolSize(List<Integer> concurrency) {
+        if (concurrency.isEmpty() || concurrency.get(0) < DEFAULT_POOL_SIZE) {
+            return DEFAULT_POOL_SIZE;
         }
-    }
 
-    private Integer getMaxPoolSize(List<Integer> concurrency) {
-        if (concurrency.size() < 2) {
-            return DEFAULT_MAX_POOL_SIZE;
-        } else if (concurrency.get(1) / 2 > DEFAULT_MAX_POOL_SIZE) {
-            //Rounding to the nearest integer value
-            return (concurrency.get(1) + 1) / 2;
-        } else {
-            return DEFAULT_MAX_POOL_SIZE;
+        if (concurrency.size() == 1 || concurrency.get(0) > DEFAULT_POOL_SIZE) {
+            return concurrency.get(0) + 1;
         }
+
+        if (concurrency.size() == 2 || concurrency.get(1) < DEFAULT_POOL_SIZE) {
+            return DEFAULT_POOL_SIZE;
+        }
+
+        return concurrency.get(1) + 1;
     }
 }

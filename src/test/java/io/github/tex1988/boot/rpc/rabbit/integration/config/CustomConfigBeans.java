@@ -55,7 +55,7 @@ public class CustomConfigBeans {
 
         public CustomMessageConverter() {
             // Create delegate internally to avoid circular dependency
-            this.delegate = new ForyMessageConverter(2, 4);
+            this.delegate = new ForyMessageConverter(4);
         }
 
         @Override

@@ -95,7 +95,8 @@ class RabbitRpcAutoConfigure {
     private void initRabbitTemplate(EnableRabbitRpc annotation) {
         ConverterFactory converterFactory = new ConverterFactory(applicationContext, expressionResolver);
         messageConverter = converterFactory
-                .getConverter(annotation.messageConverter(), annotation.allowedSerializationPatterns(), concurrency);
+                .getConverter(annotation.messageConverter(), annotation.allowedSerializationPatterns(),
+                        concurrency, annotation.serializerPoolSize());
         ConfigurableListableBeanFactory beanFactory = ((ConfigurableApplicationContext) applicationContext).getBeanFactory();
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
         rabbitTemplate.setMessageConverter(messageConverter);
@@ -128,6 +129,11 @@ class RabbitRpcAutoConfigure {
         rabbitListenerContainerFactory.setDefaultRequeueRejected(true);
         rabbitListenerContainerFactory.setApplicationEventPublisher(applicationContext);
         rabbitListenerContainerFactory.setApplicationContext(applicationContext);
+        rabbitListenerContainerFactory.setConsecutiveActiveTrigger(1);
+        rabbitListenerContainerFactory.setStartConsumerMinInterval(1000L);
+        rabbitListenerContainerFactory.setConsecutiveIdleTrigger(20);
+        rabbitListenerContainerFactory.setStopConsumerMinInterval(60000L);
+        rabbitListenerContainerFactory.setPrefetchCount(1);
         if (!concurrency.isEmpty()) {
             rabbitListenerContainerFactory.setConcurrentConsumers(concurrency.get(0));
             if (concurrency.size() > 1) {
