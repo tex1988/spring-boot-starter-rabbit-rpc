@@ -26,8 +26,7 @@ import java.util.List;
  */
 public class ForyMessageConverter extends AbstractMessageConverter {
 
-    private static final int FORY_MIN_PULL_SIZE = 10;
-    private static final int FORY_MAX_PULL_SIZE = 500;
+    private static final int DEFAULT_POOL_SIZE = 16;
     private static final String CONTENT_TYPE = "application/fory";
     private static final String DEFAULT_CHARSET = "UTF-8";
 
@@ -39,27 +38,19 @@ public class ForyMessageConverter extends AbstractMessageConverter {
     }
 
     public ForyMessageConverter() {
-        this(FORY_MIN_PULL_SIZE, FORY_MAX_PULL_SIZE, null);
+        this(DEFAULT_POOL_SIZE, null);
     }
 
     public ForyMessageConverter(List<String> allowedListClasses) {
-        this(FORY_MIN_PULL_SIZE, FORY_MAX_PULL_SIZE, allowedListClasses);
-    }
-
-    public ForyMessageConverter(int poolSize, List<String> allowedListClasses) {
-        this(poolSize, poolSize, allowedListClasses);
+        this(DEFAULT_POOL_SIZE, allowedListClasses);
     }
 
     public ForyMessageConverter(int poolSize) {
-        this(poolSize, poolSize, null);
-    }
-
-    public ForyMessageConverter(int minPoolSize, int maxPoolSize) {
-        this(minPoolSize, maxPoolSize, null);
+        this(poolSize, null);
     }
 
     @SneakyThrows
-    public ForyMessageConverter(int minPoolSize, int maxPoolSize, List<String> allowedListClasses) {
+    public ForyMessageConverter(int poolSize, List<String> allowedListClasses) {
         ForyBuilder builder = Fory.builder()
                 .withLanguage(Language.JAVA)
                 .withRefTracking(true)
@@ -68,7 +59,7 @@ public class ForyMessageConverter extends AbstractMessageConverter {
                 .withAsyncCompilation(true);
         boolean isRegistrationRequired = allowedListClasses != null && !allowedListClasses.isEmpty();
         builder.requireClassRegistration(isRegistrationRequired);
-        fory = builder.buildThreadSafeForyPool(minPoolSize, maxPoolSize);
+        fory = builder.buildThreadSafeForyPool(poolSize);
         if (isRegistrationRequired) {
             for (String className : allowedListClasses) {
                 Class<?> clazz = Class.forName(className);

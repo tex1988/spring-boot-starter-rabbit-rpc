@@ -57,6 +57,16 @@ public @interface EnableRabbitRpc {
     String concurrency() default "";
 
     /**
+     * @return the size of the Apache Fory serializer pool used for both client and server RPC operations.
+     * The pool is shared across all RPC message serialization/deserialization operations.
+     * <p>A value of {@code 0} (default) enables auto-calculation based on server concurrency settings.
+     * For services with heavy client-side concurrent sends or mixed client/server workloads,
+     * consider setting an explicit value based on load testing (e.g., {@code 10-20}).
+     * <p>Default is {@code 0} (auto-calculated).
+     */
+    int serializerPoolSize() default 0;
+
+    /**
      * @return the bean name of the task executor to use for the message listener container,
      * if {@link #enableServer()} is {@code true}. By default, the executor provided by `spring-boot-starter-amqp` will be used.
      */
