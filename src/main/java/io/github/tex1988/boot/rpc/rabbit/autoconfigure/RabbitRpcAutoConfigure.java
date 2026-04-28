@@ -40,6 +40,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory;
 import org.springframework.util.ClassUtils;
 
@@ -77,6 +78,7 @@ class RabbitRpcAutoConfigure {
     private MessageConverter messageConverter;
     private SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory;
     private RabbitListenerErrorHandler errorHandler;
+    private Executor taskExecutor;
 
     @PostConstruct
     public void init() {
@@ -122,7 +124,11 @@ class RabbitRpcAutoConfigure {
 
     private void initRabbitListenerContainerFactory(EnableRabbitRpc annotation) {
         rabbitListenerContainerFactory = new SimpleRabbitListenerContainerFactory();
+        taskExecutor = resolveTaskExecutor(annotation);
         configurer.configure(rabbitListenerContainerFactory, connectionFactory);
+        if (taskExecutor != null) {
+            rabbitListenerContainerFactory.setTaskExecutor(taskExecutor);
+        }
         rabbitListenerContainerFactory.setMessageConverter(messageConverter);
         rabbitListenerContainerFactory.setFailedDeclarationRetryInterval(10000L);
         rabbitListenerContainerFactory.setMissingQueuesFatal(false);
@@ -139,9 +145,6 @@ class RabbitRpcAutoConfigure {
             if (concurrency.size() > 1) {
                 rabbitListenerContainerFactory.setMaxConcurrentConsumers(concurrency.get(1));
             }
-        }
-        if (annotation.executor() != null && !annotation.executor().isEmpty()) {
-            rabbitListenerContainerFactory.setTaskExecutor(getTaskExecutor(annotation));
         }
     }
 
@@ -252,7 +255,12 @@ class RabbitRpcAutoConfigure {
     private void createMessageListenerContainer(Queue queue) {
         MethodRabbitListenerEndpoint endpoint = new MethodRabbitListenerEndpoint();
         RabbitRpcValidator rpcValidator = new RabbitRpcValidator(validator, getServiceName());
-        RabbitRpcMessageHandler handler = new RabbitRpcMessageHandler(rpcValidator, messageConverter, methodHandles);
+
+        Executor fireAndForgetExecutor = taskExecutor != null
+                ? taskExecutor
+                : new SimpleAsyncTaskExecutor();
+
+        RabbitRpcMessageHandler handler = new RabbitRpcMessageHandler(rpcValidator, messageConverter, methodHandles, fireAndForgetExecutor);
         Method handleMethod = handler.getClass().getMethod(HANDLER_METHOD_NAME, Message.class, Channel.class, MessageProperties.class);
         endpoint.setId(queue.getName() + "-" + getServiceName());
         endpoint.setQueues(queue);
@@ -278,7 +286,7 @@ class RabbitRpcAutoConfigure {
         }
     }
 
-    private Executor getTaskExecutor(EnableRabbitRpc annotation) {
+    private Executor resolveTaskExecutor(EnableRabbitRpc annotation) {
         String executorBeanName = expressionResolver.resolveValue(annotation.executor());
         if (executorBeanName != null && !executorBeanName.isBlank()) {
             return applicationContext.getBean(executorBeanName, Executor.class);

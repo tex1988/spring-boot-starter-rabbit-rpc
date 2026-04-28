@@ -9,6 +9,7 @@ import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -100,6 +101,34 @@ public class CustomConfigBeans {
 
         public int getErrorCount() {
             return errorCount.get();
+        }
+    }
+
+    /**
+     * Custom executor for fire-and-forget methods that tracks execution.
+     */
+    @Getter
+    public static class CustomFireAndForgetExecutor implements Executor {
+
+        private final AtomicInteger taskCount = new AtomicInteger(0);
+        private final ExecutorService executorService;
+
+        public CustomFireAndForgetExecutor() {
+            executorService = Executors.newCachedThreadPool();
+        }
+
+        @Override
+        public void execute(@NotNull Runnable command) {
+            taskCount.incrementAndGet();
+            executorService.execute(command);
+        }
+
+        public int getExecutedTaskCount() {
+            return taskCount.get();
+        }
+
+        public void shutdown() {
+            executorService.shutdown();
         }
     }
 }
