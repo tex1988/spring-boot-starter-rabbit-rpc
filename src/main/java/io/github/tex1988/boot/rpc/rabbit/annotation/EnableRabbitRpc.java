@@ -67,13 +67,8 @@ public @interface EnableRabbitRpc {
     int serializerPoolSize() default 0;
 
     /**
-     * @return the bean name of the task executor to use for the message listener container
-     * and for {@link FireAndForget} method execution, if {@link #enableServer()} is {@code true}.
-     * When specified, the same executor is used for both listener container threads and
-     * asynchronous fire-and-forget method execution.
-     * If not specified, the executor provided by `spring-boot-starter-amqp` will be used for
-     * the listener container, and fire-and-forget methods will use a cached thread pool.
-     * Default is an empty string.
+     * @return the bean name of the task executor to use for the message listener container,
+     * if {@link #enableServer()} is {@code true}. By default, the executor provided by `spring-boot-starter-amqp` will be used.
      */
     String executor() default "";
 

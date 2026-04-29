@@ -59,11 +59,6 @@ public class RabbitRpcMessageHandler {
     private final Map<Class<?>, Map<Method, MethodHandle>> methodHandles;
 
     /**
-     * Executor for asynchronous execution of fire-and-forget methods.
-     */
-    private final java.util.concurrent.Executor fireAndForgetExecutor;
-
-    /**
      * Processes a RabbitMQ message and invokes the appropriate service method.
      *
      * @param message           the incoming RabbitMQ message
@@ -96,19 +91,13 @@ public class RabbitRpcMessageHandler {
         // Validate method arguments
         validator.validate(args, method, iClazz);
 
+        // Invoke the target method
+        Object result = methodHandle.invokeWithArguments(args);
+
         // Handle fire-and-forget methods
         if (method.isAnnotationPresent(FireAndForget.class)) {
-            fireAndForgetExecutor.execute(() -> {
-                try {
-                    methodHandle.invokeWithArguments(args);
-                } catch (Throwable e) {
-                    log.error("Error executing fire-and-forget method {}#{}", serviceName, methodName, e);
-                }
-            });
             return null;
         } else {
-            // Invoke the target method synchronously for normal RPC
-            Object result = methodHandle.invokeWithArguments(args);
             return getResponse(returnType, result);
         }
     }
