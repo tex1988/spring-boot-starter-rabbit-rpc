@@ -4,7 +4,7 @@ Spring Boot starter and implementation of RPC over RabbitMQ (spring-boot-starter
 # Read Me First
 This project is a Spring Boot starter that enables the use of RabbitMQ as a transport layer for remote procedure calls (RPC).
 It acts as an abstraction over spring-boot-starter-amqp, leveraging most of its settings while allowing some of them to be overridden.
-The project uses Java interfaces as RPC contracts and Kryo 5 for RabbitMQ message serialization.
+The project uses Java interfaces as RPC contracts and Apache Fory for RabbitMQ message serialization.
 
 The primary use case is to define contract interfaces and argument classes in separate modules, which can then be shared across different applications.
 Both the client and server must have access to the same contracts and argument classes for seamless communication.

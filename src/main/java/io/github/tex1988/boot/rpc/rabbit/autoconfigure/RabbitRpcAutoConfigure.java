@@ -35,6 +35,7 @@ import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.boot.autoconfigure.amqp.RabbitProperties;
 import org.springframework.boot.autoconfigure.amqp.SimpleRabbitListenerContainerFactoryConfigurer;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.context.ApplicationContext;
@@ -72,6 +73,7 @@ class RabbitRpcAutoConfigure {
     private final Validator validator;
     private final Map<Class<?>, Map<Method, MethodHandle>> methodHandles = new ConcurrentHashMap<>();
     private final RabbitRpcBeanExpressionResolver expressionResolver;
+    private final RabbitProperties rabbitProperties;
 
     private List<Integer> concurrency;
     private MessageConverter messageConverter;
@@ -101,6 +103,9 @@ class RabbitRpcAutoConfigure {
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
         rabbitTemplate.setMessageConverter(messageConverter);
         rabbitTemplate.setReplyTimeout(annotation.replyTimeout());
+        if (rabbitProperties != null && rabbitProperties.getTemplate() != null) {
+            rabbitTemplate.setObservationEnabled(rabbitProperties.getTemplate().isObservationEnabled());
+        }
         beanFactory.getBeansOfType(RabbitRpcClientProxyFactory.class).forEach((name, factory) ->
         {
             factory.setRabbitTemplate(rabbitTemplate);
