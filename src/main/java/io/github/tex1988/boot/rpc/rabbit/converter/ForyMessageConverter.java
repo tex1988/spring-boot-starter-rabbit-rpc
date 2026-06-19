@@ -53,7 +53,7 @@ public class ForyMessageConverter extends AbstractMessageConverter {
     public ForyMessageConverter(int poolSize, List<String> allowedListClasses) {
         ForyBuilder builder = Fory.builder()
                 .withLanguage(Language.JAVA)
-                .withRefTracking(true)
+                .withRefTracking(false)
                 .withCompatibleMode(CompatibleMode.COMPATIBLE)
                 .withUnknownEnumValueStrategy(UnknownEnumValueStrategy.RETURN_NULL)
                 .withAsyncCompilation(true);
