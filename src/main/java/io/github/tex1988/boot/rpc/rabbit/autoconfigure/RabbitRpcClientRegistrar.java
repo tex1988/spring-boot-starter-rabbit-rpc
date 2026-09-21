@@ -5,6 +5,7 @@ import io.github.tex1988.boot.rpc.rabbit.annotation.RabbitRpcInterface;
 import io.github.tex1988.boot.rpc.rabbit.rabbit.RabbitRpcClientProxyFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
@@ -15,7 +16,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
-import org.springframework.lang.NonNull;
 
 import java.util.Arrays;
 import java.util.Map;

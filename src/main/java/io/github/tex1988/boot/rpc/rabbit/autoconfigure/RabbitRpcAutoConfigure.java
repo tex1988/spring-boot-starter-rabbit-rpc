@@ -15,6 +15,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import org.jspecify.annotations.Nullable;
 import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
@@ -35,8 +36,8 @@ import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
-import org.springframework.boot.autoconfigure.amqp.RabbitProperties;
-import org.springframework.boot.autoconfigure.amqp.SimpleRabbitListenerContainerFactoryConfigurer;
+import org.springframework.boot.amqp.autoconfigure.RabbitProperties;
+import org.springframework.boot.amqp.autoconfigure.SimpleRabbitListenerContainerFactoryConfigurer;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -103,7 +104,7 @@ class RabbitRpcAutoConfigure {
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
         rabbitTemplate.setMessageConverter(messageConverter);
         rabbitTemplate.setReplyTimeout(annotation.replyTimeout());
-        if (rabbitProperties != null && rabbitProperties.getTemplate() != null) {
+        if (rabbitProperties != null && rabbitProperties.getTemplate() != null) { //NOSONAR
             rabbitTemplate.setObservationEnabled(rabbitProperties.getTemplate().isObservationEnabled());
         }
         beanFactory.getBeansOfType(RabbitRpcClientProxyFactory.class).forEach((name, factory) ->
@@ -145,8 +146,9 @@ class RabbitRpcAutoConfigure {
                 rabbitListenerContainerFactory.setMaxConcurrentConsumers(concurrency.get(1));
             }
         }
-        if (annotation.executor() != null && !annotation.executor().isEmpty()) {
-            rabbitListenerContainerFactory.setTaskExecutor(getTaskExecutor(annotation));
+        Executor taskExecutor = getTaskExecutor(annotation);
+        if (taskExecutor != null) {
+            rabbitListenerContainerFactory.setTaskExecutor(taskExecutor);
         }
     }
 
@@ -205,7 +207,7 @@ class RabbitRpcAutoConfigure {
 
     private Queue createQueue(String queueName, String exchangeName, String routing, AmqpAdmin amqpAdmin) {
         QueueInformation queueInfo = amqpAdmin.getQueueInfo(queueName);
-        if (queueInfo == null || queueInfo.getName() == null) {
+        if (queueInfo == null || queueInfo.getName() == null) { //NOSONAR
             Queue queue = new Queue(queueName, false);
             amqpAdmin.declareQueue(queue);
             Binding binding = BindingBuilder.bind(queue)
@@ -283,7 +285,10 @@ class RabbitRpcAutoConfigure {
         }
     }
 
-    private Executor getTaskExecutor(EnableRabbitRpc annotation) {
+    private @Nullable Executor getTaskExecutor(EnableRabbitRpc annotation) {
+        if (annotation.executor().isEmpty()) {
+            return null;
+        }
         String executorBeanName = expressionResolver.resolveValue(annotation.executor());
         if (executorBeanName != null && !executorBeanName.isBlank()) {
             return applicationContext.getBean(executorBeanName, Executor.class);

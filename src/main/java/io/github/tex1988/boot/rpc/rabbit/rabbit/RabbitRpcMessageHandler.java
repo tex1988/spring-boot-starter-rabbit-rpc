@@ -73,8 +73,8 @@ public class RabbitRpcMessageHandler {
         log.debug("Received Rabbit RPC message {}", message);
 
         // Extract method and service names from message headers
-        String methodName = messageProperties.getHeaders().get(METHOD_HEADER).toString();
-        String serviceName = messageProperties.getHeaders().get(SERVICE_HEADER).toString();
+        String methodName = Objects.requireNonNull(messageProperties.getHeaders().get(METHOD_HEADER)).toString();
+        String serviceName = Objects.requireNonNull(messageProperties.getHeaders().get(SERVICE_HEADER)).toString();
 
         // Convert message payload to method arguments
         Object[] args = (Object[]) converter.fromMessage(message);

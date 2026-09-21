@@ -1,11 +1,13 @@
 package io.github.tex1988.boot.rpc.rabbit.integration.config;
 
+import com.rabbitmq.client.Channel;
 import io.github.tex1988.boot.rpc.rabbit.converter.ForyMessageConverter;
 import lombok.Getter;
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.listener.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
-import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
@@ -33,7 +35,7 @@ public class CustomConfigBeans {
         }
 
         @Override
-        public void execute(@NotNull Runnable task) {
+        public void execute(@NonNull Runnable task) {
             taskCount.incrementAndGet();
             executorService.execute(task);
         }
@@ -59,13 +61,13 @@ public class CustomConfigBeans {
         }
 
         @Override
-        public @NotNull Message toMessage(@NotNull Object object, org.springframework.amqp.core.@NotNull MessageProperties messageProperties) throws org.springframework.amqp.support.converter.MessageConversionException {
+        public @NonNull Message toMessage(@NonNull Object object, org.springframework.amqp.core.@NonNull MessageProperties messageProperties) throws org.springframework.amqp.support.converter.MessageConversionException {
             toMessageCount.incrementAndGet();
             return delegate.toMessage(object, messageProperties);
         }
 
         @Override
-        public @NotNull Object fromMessage(@NotNull Message message) throws org.springframework.amqp.support.converter.MessageConversionException {
+        public @NonNull Object fromMessage(@NonNull Message message) throws org.springframework.amqp.support.converter.MessageConversionException {
             fromMessageCount.incrementAndGet();
             return delegate.fromMessage(message);
         }
@@ -90,8 +92,9 @@ public class CustomConfigBeans {
         private volatile Throwable lastError;
 
         @Override
-        public Object handleError(Message amqpMessage, org.springframework.messaging.Message<?> message,
-                                  ListenerExecutionFailedException exception) {
+        public Object handleError(@NonNull Message amqpMessage, @Nullable Channel channel,
+                                  org.springframework.messaging.@Nullable Message<?> message,
+                                  @NonNull ListenerExecutionFailedException exception) {
             errorCount.incrementAndGet();
             lastError = exception;
             // Return null to indicate error was handled
