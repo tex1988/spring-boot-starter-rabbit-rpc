@@ -10,10 +10,11 @@ import io.github.tex1988.boot.rpc.rabbit.model.RabbitRpcErrorMapping;
 import io.github.tex1988.boot.rpc.rabbit.util.Utils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
-import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.messaging.support.MessageBuilder;
 
 import java.lang.invoke.MethodHandle;
@@ -71,8 +72,9 @@ public class RabbitRpcErrorHandler implements RabbitListenerErrorHandler {
      * @return a {@link Message} containing an {@link ErrorRabbitResponse} as the payload
      */
     @Override
-    public Object handleError(Message amqpMessage, org.springframework.messaging.Message<?> message,
-                              ListenerExecutionFailedException exception) {
+    public Object handleError(@NonNull Message amqpMessage, @Nullable Channel channel,
+                              org.springframework.messaging.@Nullable Message<?> message,
+                              org.springframework.amqp.listener.ListenerExecutionFailedException exception) {
         Throwable cause = exception.getCause();
         ErrorRabbitResponse response;
         String methodName = getHeader(amqpMessage, METHOD_HEADER);
@@ -94,21 +96,6 @@ public class RabbitRpcErrorHandler implements RabbitListenerErrorHandler {
         } else {
             return null;
         }
-    }
-
-    /**
-     * Handles errors that occur during the execution of RabbitMQ message listeners.
-     *
-     * @param amqpMessage the original AMQP message that caused the error
-     * @param channel     the AMQP channel for manual acks
-     * @param message     the converted Spring {@link org.springframework.messaging.Message}
-     * @param exception   the exception thrown during message processing
-     * @return a {@link Message} containing an {@link ErrorRabbitResponse} as the payload
-     */
-    @Override
-    public Object handleError(Message amqpMessage, Channel channel,
-                              org.springframework.messaging.Message<?> message, ListenerExecutionFailedException exception) {
-        return handleError(amqpMessage, message, exception);
     }
 
     private ErrorRabbitResponse resolveByMapping(Throwable exception) {
@@ -171,9 +158,9 @@ public class RabbitRpcErrorHandler implements RabbitListenerErrorHandler {
 
     private String getHeader(Message amqpMessage, String header) {
         MessageProperties properties = amqpMessage.getMessageProperties();
-        if (properties != null) {
+        if (properties != null) { //NOSONAR
             Map<String, Object> headers = properties.getHeaders();
-            if (headers != null && !headers.isEmpty()) {
+            if (headers != null && !headers.isEmpty()) { //NOSONAR
                 return (String) headers.get(header);
             }
         }

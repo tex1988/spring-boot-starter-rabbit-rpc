@@ -8,11 +8,11 @@ import org.apache.fory.config.ForyBuilder;
 import org.apache.fory.config.Language;
 import org.apache.fory.config.UnknownEnumValueStrategy;
 import org.apache.fory.logging.LoggerFactory;
+import org.jspecify.annotations.NonNull;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.support.converter.AbstractMessageConverter;
 import org.springframework.amqp.support.converter.MessageConversionException;
-import org.springframework.lang.NonNull;
 
 import java.util.List;
 
@@ -95,7 +95,7 @@ public class ForyMessageConverter extends AbstractMessageConverter {
     }
 
     private void validateProperties(MessageProperties properties) {
-        if (properties == null || properties.getContentType() == null) {
+        if (properties == null || properties.getContentType() == null) { //NOSONAR
             throw new IllegalArgumentException("Invalid message properties: " + properties);
         }
         if (!properties.getContentType().equals(CONTENT_TYPE)) {

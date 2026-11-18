@@ -164,6 +164,31 @@ One application can act as both a client and a server. In this case, the `enable
 
 For all `@EnableRabbitRpc` properties, see the [EnableRabbitRpc](src/main/java/io/github/tex1988/boot/rpc/rabbit/annotation/EnableRabbitRpc.java) class.
 
+### JDK 24+ `sun.misc.Unsafe` warning
+On JDK 24+ Apache Fory may print `WARNING: sun.misc.Unsafe::staticFieldOffset has been called by org.apache.fory.platform.internal._Lookup`.
+Fory needs a trusted `MethodHandles.Lookup`. It first tries reflection on `java.lang.invoke` and falls back to `sun.misc.Unsafe` only when that package is not open.
+Open it to the application so the Unsafe path is never used:
+
+```
+java --add-opens java.base/java.lang.invoke=ALL-UNNAMED -jar app.jar
+```
+
+or in the executable jar's `MANIFEST.MF` (honored by `java -jar`, kept by Spring Boot repackage):
+
+```xml
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-jar-plugin</artifactId>
+    <configuration>
+        <archive>
+            <manifestEntries>
+                <Add-Opens>java.base/java.lang.invoke</Add-Opens>
+            </manifestEntries>
+        </archive>
+    </configuration>
+</plugin>
+```
+
 ### Reference Documentation
 For further reference, please consider the following sections:
 

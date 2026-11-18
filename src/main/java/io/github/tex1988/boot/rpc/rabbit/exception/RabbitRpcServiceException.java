@@ -25,17 +25,17 @@ public class RabbitRpcServiceException extends RuntimeException {
     /**
      * The timestamp when the exception occurred.
      */
-    private Long timestamp;
+    private final Long timestamp;
 
     /**
      * The name of the Rabbit RPC service where the exception occurred.
      */
-    private String serviceName;
+    private final String serviceName;
 
     /**
      * The status code associated with the exception, providing additional context.
      */
-    private Integer statusCode;
+    private final Integer statusCode;
 
     /**
      * Constructs a new {@code RabbitRpcServiceException} with the specified details.
